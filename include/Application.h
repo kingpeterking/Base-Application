@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.h"
+#include "Settings.h"
 
 struct GLFWwindow;
 
@@ -22,4 +23,11 @@ private:
     ImVec4 m_clearColor;
     bool m_showDemoWindow;
     bool m_showAnotherWindow;
+
+    // Settings management
+    Settings m_settings;
+
+    // Settings keys
+    void LoadSettings();
+    void SaveSettings();
 };

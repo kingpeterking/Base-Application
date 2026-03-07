@@ -8,12 +8,16 @@
 
 // Standard library
 #include <cstdio>
-
-// Tell GLFW not to include OpenGL headers
-#define GLFW_INCLUDE_NONE
+#include <string>
+#include <sstream>
+#include <iomanip>
 
 // GLFW
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+
+// SimpleIni
+#include "SimpleIni.h"
 
 // Dear ImGui - define math operators before including imgui.h
 #define IMGUI_DEFINE_MATH_OPERATORS

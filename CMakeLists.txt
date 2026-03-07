@@ -14,6 +14,9 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "Build GLFW tests" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build GLFW examples" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "Generate installation target for GLFW" FORCE)
 
+# SimpleIni - header-only library from Brodie Thiesfield
+# We'll create local SimpleIni headers
+
 # Dear ImGui
 FetchContent_Declare(
     imgui
@@ -39,6 +42,7 @@ add_executable(ImGuiApp
     src/pch.cpp
     src/main.cpp
     src/Application.cpp
+    src/Settings.cpp
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_demo.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp

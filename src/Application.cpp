@@ -5,7 +5,8 @@ Application::Application()
     : m_window(nullptr),
       m_clearColor(0.45f, 0.55f, 0.60f, 1.00f),
       m_showDemoWindow(true),
-      m_showAnotherWindow(false)
+      m_showAnotherWindow(false),
+      m_settings("settings.ini")
 {
 }
 
@@ -41,6 +42,7 @@ bool Application::Initialize()
     glfwSwapInterval(1); // Enable vsync
 
     SetupImGui();
+    LoadSettings();
     return true;
 }
 
@@ -70,6 +72,9 @@ void Application::Run()
         glfwPollEvents();
         RenderFrame();
     }
+
+    // Save settings before closing
+    SaveSettings();
 }
 
 void Application::RenderFrame()
@@ -145,4 +150,43 @@ void Application::Shutdown()
     }
 
     glfwTerminate();
+}
+
+void Application::LoadSettings()
+{
+    // Load settings from file
+    if (!m_settings.Load())
+    {
+        fprintf(stdout, "Creating new settings file\n");
+    }
+
+    // Load UI state from settings
+    m_showDemoWindow = m_settings.GetBool("UI", "ShowDemoWindow", true);
+    m_showAnotherWindow = m_settings.GetBool("UI", "ShowAnotherWindow", false);
+
+    // Load color settings
+    float r = m_settings.GetFloat("Display", "ColorR", 0.45f);
+    float g = m_settings.GetFloat("Display", "ColorG", 0.55f);
+    float b = m_settings.GetFloat("Display", "ColorB", 0.60f);
+    float a = m_settings.GetFloat("Display", "ColorA", 1.00f);
+    m_clearColor = ImVec4(r, g, b, a);
+}
+
+void Application::SaveSettings()
+{
+    // Save UI state to settings
+    m_settings.SetBool("UI", "ShowDemoWindow", m_showDemoWindow);
+    m_settings.SetBool("UI", "ShowAnotherWindow", m_showAnotherWindow);
+
+    // Save color settings
+    m_settings.SetFloat("Display", "ColorR", m_clearColor.x);
+    m_settings.SetFloat("Display", "ColorG", m_clearColor.y);
+    m_settings.SetFloat("Display", "ColorB", m_clearColor.z);
+    m_settings.SetFloat("Display", "ColorA", m_clearColor.w);
+
+    // Save to file
+    if (!m_settings.Save())
+    {
+        fprintf(stderr, "Failed to save settings\n");
+    }
 }
