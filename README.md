@@ -13,7 +13,7 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 - ✅ **Settings Management** - INI file persistence system
 - ✅ **Window Manager** - Modular ImGui window architecture
 - ✅ **Main Menu** - Centralized window visibility control
-- ✅ **ImPlot** - Professional data visualization and plotting library
+- ✅ **ImPlot v0.16** - Professional data visualization with comprehensive demo examples
 - ✅ **Self-contained** - No external dependencies to install
 - ✅ **Application Class Architecture** - Clean, extensible design
 - ✅ **Cross-Platform OpenGL** - Smooth rendering across Windows, macOS, and Linux
@@ -253,11 +253,13 @@ The application includes four example windows:
 - Framework details
 
 **4. RenderImPlotDemoWindow()**
-- ImPlot library demonstration
-- Multiple data visualization examples
-- Trigonometric function plots (sin, cos)
-- Plot lines and scatter markers
-- Professional plotting capabilities
+- ImPlot's comprehensive demo window
+- Line plots, scatter plots, and bar charts
+- Heatmaps and digital plots
+- Error bars and stem plots
+- Real-time data streaming examples
+- Interactive axis controls and pan/zoom
+- Demonstrates all ImPlot capabilities
 
 ### Adding a New Window
 
