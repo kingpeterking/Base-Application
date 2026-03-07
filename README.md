@@ -10,6 +10,7 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 - ✅ **CMake** - Cross-platform build system
 - ✅ **C++17** - Modern C++ standard
 - ✅ **Precompiled Headers** - Fast incremental builds
+- ✅ **Settings Management** - INI file persistence system
 - ✅ **Self-contained** - No external dependencies to install
 - ✅ **Application Class Architecture** - Clean, extensible design
 
@@ -20,13 +21,17 @@ Base-Application/
 ├── CMakeLists.txt              # Build configuration
 ├── include/
 │   ├── Application.h           # Main application class
+│   ├── Settings.h              # Settings management class
+│   ├── SimpleIni.h             # INI file parser
 │   └── pch.h                   # Precompiled headers
 ├── src/
 │   ├── main.cpp                # Entry point
 │   ├── Application.cpp         # Application implementation
+│   ├── Settings.cpp            # Settings implementation
 │   └── pch.cpp                 # PCH source file
 ├── .gitignore                  # Git ignore rules
-└── README.md                   # This file
+├── README.md                   # This file
+└── SETTINGS_GUIDE.md           # Settings usage documentation
 ```
 
 ## Prerequisites
@@ -94,6 +99,7 @@ You should see a window with:
 - A demo ImGui window showcasing various UI elements
 - An interactive "Hello, world!" panel with controls
 - Real-time FPS counter
+- Settings that persist across application runs
 
 ## Features Included
 
@@ -107,6 +113,55 @@ You should see a window with:
 
 ### ImGui Demo Window
 The application includes ImGui's built-in demo window showing hundreds of UI widgets and capabilities.
+
+### Settings Management
+The application automatically persists settings to an INI file:
+- UI state (window visibility)
+- Display settings (colors)
+- Custom application settings
+
+## Settings Management
+
+### Overview
+
+The application includes a complete settings management system built on SimpleIni. Settings are automatically:
+- **Loaded** from `settings.ini` on startup
+- **Saved** to `settings.ini` on shutdown
+
+### Quick Usage
+
+```cpp
+// In your application code
+m_settings.SetString("Section", "Key", "Value");
+m_settings.SetInt("Section", "Count", 42);
+m_settings.SetFloat("Section", "Volume", 0.8f);
+m_settings.SetBool("Section", "Enabled", true);
+
+// Retrieve values
+std::string value = m_settings.GetString("Section", "Key", "default");
+int count = m_settings.GetInt("Section", "Count", 0);
+float volume = m_settings.GetFloat("Section", "Volume", 0.5f);
+bool enabled = m_settings.GetBool("Section", "Enabled", false);
+```
+
+### Current Settings
+
+The application stores:
+
+**UI State**
+- `ShowDemoWindow` - Demo window visibility
+- `ShowAnotherWindow` - Custom window visibility
+
+**Display Settings**
+- `ColorR/G/B/A` - Clear color components
+
+### For More Details
+
+See `SETTINGS_GUIDE.md` for:
+- Complete API reference
+- Advanced usage examples
+- How to add new settings
+- Best practices
 
 ## Extending the Application
 
@@ -130,19 +185,27 @@ Extend the `Application` class to add application-specific functionality:
 2. Implement logic in `src/Application.cpp`
 3. Call your functions from `RenderFrame()` or `Run()`
 
-### Example: Adding a Data Container
+### Persisting Custom Settings
+
 ```cpp
 // In Application.h
-class Application {
 private:
-    std::vector<std::string> myData;
-    void UpdateData();
-};
+    std::string m_playerName;
+    int m_level;
+    void LoadSettings();
+    void SaveSettings();
 
-// In Application.cpp
-void Application::UpdateData() {
-    // Your custom logic here
-}
+// In Application.cpp constructor
+LoadSettings();
+
+// In LoadSettings()
+m_playerName = m_settings.GetString("Player", "Name", "Player1");
+m_level = m_settings.GetInt("Player", "Level", 1);
+
+// In SaveSettings()
+m_settings.SetString("Player", "Name", m_playerName);
+m_settings.SetInt("Player", "Level", m_level);
+m_settings.Save();
 ```
 
 ## Build Configuration
@@ -173,6 +236,7 @@ All dependencies are automatically fetched and built by CMake:
 - **Dear ImGui** v1.89.9 - UI framework
 - **GLFW** 3.3.8 - Window & input handling
 - **OpenGL** 3.2 - Rendering API
+- **SimpleIni** - INI file parser (bundled)
 
 No pre-installation required!
 
@@ -182,6 +246,7 @@ The project includes:
 - ✅ **Precompiled headers** - Reduce compilation time significantly
 - ✅ **Efficient rendering** - 60 FPS on most systems
 - ✅ **Optimized builds** - Release builds available via CMake
+- ✅ **Settings caching** - Load/save only at startup/shutdown
 
 ### Build Times
 - **First build**: ~20-30 seconds (dependencies compiled)
@@ -205,12 +270,27 @@ If you get OpenGL context errors:
 - Ensure CMake is installed and in your PATH
 - On Linux, install development libraries: `sudo apt install libxorg-dev`
 
+### Settings Not Persisting
+- Ensure `settings.ini` file can be written to the executable directory
+- Check file permissions on Linux/macOS
+- The settings file is created on first run
+
 ## Cross-Platform Support
 
 This project builds and runs on:
 - ✅ Windows (7, 8, 10, 11)
 - ✅ macOS (Intel and Apple Silicon)
 - ✅ Linux (Ubuntu, Fedora, etc.)
+
+## Project Organization
+
+### Best Practices Implemented
+
+1. **Precompiled Headers** - All common includes centralized in `pch.h`
+2. **Single Responsibility** - Application handles UI, Settings handles persistence
+3. **Resource Management** - RAII principles throughout
+4. **Type Safety** - Settings API supports multiple data types
+5. **Configuration** - Everything configurable via CMake
 
 ## License
 
@@ -244,17 +324,37 @@ To extend this project:
 ### CMake
 - [Official Documentation](https://cmake.org/cmake/help/latest/)
 
+### Settings Management
+- [SETTINGS_GUIDE.md](SETTINGS_GUIDE.md) - Complete settings API documentation
+
 ## Getting Help
 
 For issues or questions:
 1. Check the troubleshooting section above
-2. Review the ImGui/GLFW documentation
-3. Open an issue on GitHub
+2. Review [SETTINGS_GUIDE.md](SETTINGS_GUIDE.md) for settings-related questions
+3. Review the ImGui/GLFW documentation
+4. Open an issue on GitHub
+
+## Recent Updates
+
+### Version 1.1
+- ✅ Added Settings management system with SimpleIni
+- ✅ Application now persists UI state and display settings
+- ✅ New SETTINGS_GUIDE.md documentation
+- ✅ Centralized includes via precompiled headers
+
+### Version 1.0
+- ✅ Initial release with Dear ImGui + GLFW + CMake
+- ✅ Cross-platform support
+- ✅ Application class architecture
 
 ## Author
 
-Created as a modern template for ImGui-based applications.
+Created as a modern template for ImGui-based applications with professional settings management.
 
 ---
 
 **Ready to build?** Run `cmake .. && cmake --build .` in the build directory!
+
+**Need settings documentation?** Check out [SETTINGS_GUIDE.md](SETTINGS_GUIDE.md)
+
