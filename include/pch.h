@@ -44,3 +44,4 @@
 
 // Tools
 #include "Tools/HTTPClient.h"
+#include "Tools/ImPlotClient.h"

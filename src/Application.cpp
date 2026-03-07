@@ -268,7 +268,7 @@ void Application::RenderApplicationInfoWindow(bool* isOpen)
 
 void Application::RenderImPlotDemoWindow(bool* isOpen)
 {
-    ImPlot::ShowDemoWindow(isOpen);
+    m_implotClient.RenderDemoWindow(isOpen);
 }
 
 void Application::RenderURLRequestWindow(bool* isOpen)

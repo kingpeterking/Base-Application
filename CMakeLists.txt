@@ -60,6 +60,7 @@ add_executable(ImGuiApp
     src/WindowFunction.cpp
     src/WindowManager.cpp
     src/Tools/HTTPClient.cpp
+    src/Tools/ImPlotClient.cpp
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_demo.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp

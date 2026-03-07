@@ -3,6 +3,8 @@
 #include "pch.h"
 #include "Settings.h"
 #include "WindowManager.h"
+#include "Tools/HTTPClient.h"
+#include "Tools/ImPlotClient.h"
 
 struct GLFWwindow;
 
@@ -33,8 +35,9 @@ private:
     ImVec4 m_clearColor;
     bool m_showMainMenu;
 
-    // HTTP Client for network requests
+    // Tool clients
     HTTPClient m_httpClient;
+    ImPlotClient m_implotClient;
 
     // URL Request state
     static constexpr size_t URL_BUFFER_SIZE = 512;
