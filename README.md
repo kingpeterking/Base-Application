@@ -14,6 +14,8 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 - ✅ **Window Manager** - Modular ImGui window architecture
 - ✅ **Main Menu** - Centralized window visibility control
 - ✅ **ImPlot v0.16** - Professional data visualization with comprehensive demo examples
+- ✅ **CURL** - HTTP/HTTPS request capabilities
+- ✅ **HTTP Client Tool** - Built-in URL request and response window
 - ✅ **Self-contained** - No external dependencies to install
 - ✅ **Application Class Architecture** - Clean, extensible design
 - ✅ **Cross-Platform OpenGL** - Smooth rendering across Windows, macOS, and Linux
@@ -260,6 +262,15 @@ The application includes four example windows:
 - Real-time data streaming examples
 - Interactive axis controls and pan/zoom
 - Demonstrates all ImPlot capabilities
+
+**5. RenderURLRequestWindow()**
+- HTTP/HTTPS request client
+- URL input field with default example
+- Send request button
+- Response display with scrollable area
+- Copy response to clipboard functionality
+- Error handling and status display
+- Integration with libcurl for network operations
 
 ### Adding a New Window
 
