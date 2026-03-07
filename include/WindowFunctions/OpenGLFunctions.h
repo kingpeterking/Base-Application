@@ -47,4 +47,3 @@ namespace GLFunc
         if (glClear_ptr) glClear_ptr(mask);
     }
 }
-

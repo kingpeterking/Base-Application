@@ -43,7 +43,7 @@
 #include <curl/curl.h>
 
 // Custom OpenGL function wrappers
-#include "OpenGLFunctions.h"
+#include "WindowFunctions/OpenGLFunctions.h"
 
 // Tools
 #include "Tools/HTTPClient.h"
