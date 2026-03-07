@@ -11,6 +11,10 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <map>
+#include <fstream>
+#include <algorithm>
+#include <cstdint>
 
 // GLFW
 #define GLFW_INCLUDE_NONE

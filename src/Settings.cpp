@@ -1,8 +1,5 @@
 #include "pch.h"
 #include "Settings.h"
-#include "SimpleIni.h"
-#include <sstream>
-#include <iomanip>
 
 Settings::Settings(const std::string& filePath)
     : m_filePath(filePath)
