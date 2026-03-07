@@ -26,6 +26,7 @@ private:
     void RenderDemoWindow(bool* isOpen);
     void RenderHelloWorldWindow(bool* isOpen);
     void RenderApplicationInfoWindow(bool* isOpen);
+    void RenderImPlotDemoWindow(bool* isOpen);
 
     GLFWwindow* m_window;
     ImVec4 m_clearColor;
