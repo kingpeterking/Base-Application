@@ -30,6 +30,7 @@ private:
     GLFWwindow* m_window;
     ImVec4 m_clearColor;
     bool m_showMainMenu;
+    std::string m_windowToFocus;  // Track which window needs to be brought to front
 
     // Window management
     WindowManager m_windowManager;

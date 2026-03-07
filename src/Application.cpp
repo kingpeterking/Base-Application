@@ -5,6 +5,7 @@ Application::Application()
     : m_window(nullptr),
       m_clearColor(0.45f, 0.55f, 0.60f, 1.00f),
       m_showMainMenu(true),
+      m_windowToFocus(""),
       m_settings("settings.ini")
 {
 }
@@ -181,7 +182,8 @@ void Application::RenderMainMenu(bool* isOpen)
                         std::string focusLabel = "Focus##" + windowName;
                         if (ImGui::SmallButton(focusLabel.c_str()))
                         {
-                            ImGui::SetWindowFocus(windowName.c_str());
+                            // Mark this window to be brought to front
+                            m_windowToFocus = windowName;
                         }
                     }
                 }
@@ -194,6 +196,13 @@ void Application::RenderMainMenu(bool* isOpen)
         ImGui::Text("Total Windows: %zu", allWindows.size() - 1); // -1 for the main menu itself
 
         ImGui::End();
+    }
+
+    // Apply focus to marked window (rendered after menu so it takes effect)
+    if (!m_windowToFocus.empty())
+    {
+        ImGui::SetWindowFocus(m_windowToFocus.c_str());
+        m_windowToFocus.clear();
     }
 }
 
