@@ -4,8 +4,6 @@
 Application::Application()
     : m_window(nullptr),
       m_clearColor(0.45f, 0.55f, 0.60f, 1.00f),
-      m_showDemoWindow(true),
-      m_showAnotherWindow(false),
       m_settings("settings.ini")
 {
 }
@@ -42,6 +40,7 @@ bool Application::Initialize()
     glfwSwapInterval(1); // Enable vsync
 
     SetupImGui();
+    SetupWindows();
     LoadSettings();
     return true;
 }
@@ -84,40 +83,8 @@ void Application::RenderFrame()
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    // 1. Show the big demo window
-    if (m_showDemoWindow)
-        ImGui::ShowDemoWindow(&m_showDemoWindow);
-
-    // 2. Show a simple window that we create ourselves
-    {
-        static float f = 0.0f;
-        static int counter = 0;
-
-        ImGui::Begin("Hello, world!");
-        ImGui::Text("This is some useful text.");
-        ImGui::Checkbox("Demo Window", &m_showDemoWindow);
-        ImGui::Checkbox("Another Window", &m_showAnotherWindow);
-        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-        ImGui::ColorEdit4("clear color", (float*)&m_clearColor);
-        if (ImGui::Button("Button"))
-            counter++;
-        ImGui::SameLine();
-        ImGui::Text("counter = %d", counter);
-
-        ImGuiIO& io = ImGui::GetIO();
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-        ImGui::End();
-    }
-
-    // 3. Show another simple window
-    if (m_showAnotherWindow)
-    {
-        ImGui::Begin("Another Window", &m_showAnotherWindow);
-        ImGui::Text("Hello from another window!");
-        if (ImGui::Button("Close Me"))
-            m_showAnotherWindow = false;
-        ImGui::End();
-    }
+    // Render all window functions
+    m_windowManager.RenderAllWindows();
 
     // Rendering
     ImGui::Render();
@@ -125,15 +92,81 @@ void Application::RenderFrame()
     int display_w, display_h;
     glfwGetFramebufferSize(m_window, &display_w, &display_h);
 
-    // Use Windows API to clear the screen (only for Windows)
-    #ifdef _WIN32
-        // For Windows, we can use a simple approach - just swap the buffer
-        // ImGui will render to it via OpenGL commands inside the backend
-    #endif
-
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     glfwSwapBuffers(m_window);
+}
+
+void Application::SetupWindows()
+{
+    // Demo Window
+    m_windowManager.AddWindow("Windows", "Demo Window", [](bool* isOpen) {
+        ImGui::ShowDemoWindow(isOpen);
+    });
+
+    // Main Control Window
+    m_windowManager.AddWindow("Windows", "Hello World", [this](bool* isOpen) {
+        static float f = 0.0f;
+        static int counter = 0;
+
+        ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_FirstUseEver);
+        if (ImGui::Begin("Hello, world!", isOpen))
+        {
+            ImGui::Text("This is some useful text.");
+            ImGui::Separator();
+
+            if (ImGui::CollapsingHeader("Window Controls"))
+            {
+                WindowFunction* demoWindow = m_windowManager.GetWindow("Demo Window");
+                if (demoWindow)
+                {
+                    bool demoEnabled = demoWindow->IsEnabled();
+                    if (ImGui::Checkbox("Show Demo Window", &demoEnabled))
+                    {
+                        demoWindow->SetEnabled(demoEnabled);
+                    }
+                }
+            }
+
+            if (ImGui::CollapsingHeader("Display Settings"))
+            {
+                ImGui::ColorEdit4("Clear Color", (float*)&m_clearColor);
+            }
+
+            if (ImGui::CollapsingHeader("Interaction"))
+            {
+                ImGui::SliderFloat("Float Slider", &f, 0.0f, 1.0f);
+                if (ImGui::Button("Button"))
+                {
+                    counter++;
+                }
+                ImGui::SameLine();
+                ImGui::Text("Counter = %d", counter);
+            }
+
+            ImGuiIO& io = ImGui::GetIO();
+            ImGui::Separator();
+            ImGui::Text("Performance");
+            ImGui::Text("Average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+
+            ImGui::End();
+        }
+    });
+
+    // Info Window
+    m_windowManager.AddWindow("Windows", "Application Info", [this](bool* isOpen) {
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_FirstUseEver);
+        if (ImGui::Begin("Application Info", isOpen))
+        {
+            ImGui::Text("Dear ImGui Application");
+            ImGui::Separator();
+            ImGui::Text("Windows Managed: %zu", m_windowManager.GetWindowCount());
+            ImGui::Text("Framework: Dear ImGui");
+            ImGui::Text("Rendering: OpenGL 3.2");
+            ImGui::Text("Build: C++17 with CMake");
+            ImGui::End();
+        }
+    });
 }
 
 void Application::Shutdown()
@@ -160,29 +193,59 @@ void Application::LoadSettings()
         fprintf(stdout, "Creating new settings file\n");
     }
 
-    // Load UI state from settings
-    m_showDemoWindow = m_settings.GetBool("UI", "ShowDemoWindow", true);
-    m_showAnotherWindow = m_settings.GetBool("UI", "ShowAnotherWindow", false);
-
     // Load color settings
     float r = m_settings.GetFloat("Display", "ColorR", 0.45f);
     float g = m_settings.GetFloat("Display", "ColorG", 0.55f);
     float b = m_settings.GetFloat("Display", "ColorB", 0.60f);
     float a = m_settings.GetFloat("Display", "ColorA", 1.00f);
     m_clearColor = ImVec4(r, g, b, a);
+
+    // Load window visibility settings
+    WindowFunction* demoWindow = m_windowManager.GetWindow("Demo Window");
+    if (demoWindow)
+    {
+        demoWindow->SetEnabled(m_settings.GetBool("Windows", "ShowDemoWindow", true));
+    }
+
+    WindowFunction* helloWindow = m_windowManager.GetWindow("Hello World");
+    if (helloWindow)
+    {
+        helloWindow->SetEnabled(m_settings.GetBool("Windows", "ShowHelloWorld", true));
+    }
+
+    WindowFunction* infoWindow = m_windowManager.GetWindow("Application Info");
+    if (infoWindow)
+    {
+        infoWindow->SetEnabled(m_settings.GetBool("Windows", "ShowAppInfo", true));
+    }
 }
 
 void Application::SaveSettings()
 {
-    // Save UI state to settings
-    m_settings.SetBool("UI", "ShowDemoWindow", m_showDemoWindow);
-    m_settings.SetBool("UI", "ShowAnotherWindow", m_showAnotherWindow);
-
     // Save color settings
     m_settings.SetFloat("Display", "ColorR", m_clearColor.x);
     m_settings.SetFloat("Display", "ColorG", m_clearColor.y);
     m_settings.SetFloat("Display", "ColorB", m_clearColor.z);
     m_settings.SetFloat("Display", "ColorA", m_clearColor.w);
+
+    // Save window visibility settings
+    WindowFunction* demoWindow = m_windowManager.GetWindow("Demo Window");
+    if (demoWindow)
+    {
+        m_settings.SetBool("Windows", "ShowDemoWindow", demoWindow->IsEnabled());
+    }
+
+    WindowFunction* helloWindow = m_windowManager.GetWindow("Hello World");
+    if (helloWindow)
+    {
+        m_settings.SetBool("Windows", "ShowHelloWorld", helloWindow->IsEnabled());
+    }
+
+    WindowFunction* infoWindow = m_windowManager.GetWindow("Application Info");
+    if (infoWindow)
+    {
+        m_settings.SetBool("Windows", "ShowAppInfo", infoWindow->IsEnabled());
+    }
 
     // Save to file
     if (!m_settings.Save())

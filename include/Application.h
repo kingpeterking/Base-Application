@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include "Settings.h"
+#include "WindowManager.h"
 
 struct GLFWwindow;
 
@@ -18,11 +19,13 @@ public:
 private:
     void SetupImGui();
     void RenderFrame();
+    void SetupWindows();
 
     GLFWwindow* m_window;
     ImVec4 m_clearColor;
-    bool m_showDemoWindow;
-    bool m_showAnotherWindow;
+
+    // Window management
+    WindowManager m_windowManager;
 
     // Settings management
     Settings m_settings;

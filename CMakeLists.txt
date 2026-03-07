@@ -43,6 +43,8 @@ add_executable(ImGuiApp
     src/main.cpp
     src/Application.cpp
     src/Settings.cpp
+    src/WindowFunction.cpp
+    src/WindowManager.cpp
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_demo.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
