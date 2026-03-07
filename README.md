@@ -27,7 +27,6 @@ Base-Application/
 ├── CMakeLists.txt                      # Build configuration
 ├── include/
 │   ├── Application.h                   # Main application class
-│   ├── OpenGLFunctions.h               # Cross-platform OpenGL function wrappers
 │   ├── pch.h                           # Precompiled headers
 │   ├── Tools/
 │   │   ├── Settings.h                  # Settings management class
@@ -35,6 +34,7 @@ Base-Application/
 │   │   ├── HTTPClient.h                # HTTP/HTTPS client
 │   │   └── ImPlotClient.h              # ImPlot visualization wrapper
 │   └── WindowFunctions/
+│       ├── OpenGLFunctions.h           # Cross-platform OpenGL function wrappers
 │       ├── WindowFunction.h            # ImGui window wrapper class
 │       ├── WindowManager.h             # Window manager class
 │       └── WindowFunctions.h           # Window rendering orchestrator
@@ -167,9 +167,9 @@ The application uses a modular WindowFunction/WindowManager architecture:
 - **Current Windows**:
   - Main Menu - Central window control panel
   - Demo Window - ImGui's comprehensive widget showcase
-  - Hello World - Main control panel  
-  - Application Info - Framework and performance details
-  - Plot Demo - Data visualization with sine wave chart
+  - Application - Combined info panel and interactive controls (merged Hello World + Application Info)
+  - Plot Demo - Data visualization with ImPlot
+  - URL Request - HTTP/HTTPS client tool
 
 All window visibility settings are persisted across application runs.
 
@@ -252,11 +252,24 @@ void WindowFunctions::RenderMyCustomWindow(bool* isOpen)
 }
 ```
 
-3. **Register in `Application::SetupWindows()`:**
+3. **Add window delegation to `Application.h`:**
+```cpp
+void RenderMyCustomWindow(bool* isOpen);
+```
+
+4. **Implement delegation in `Application.cpp`:**
+```cpp
+void Application::RenderMyCustomWindow(bool* isOpen)
+{
+    m_windowFunctions->RenderMyCustomWindow(isOpen);
+}
+```
+
+5. **Register in `Application::SetupWindows()`:**
 ```cpp
 // Format: AddWindow(TYPE, MENU_NAME, WINDOW_NAME, RENDER_FUNCTION)
 m_windowManager.AddWindow("Panels", "MyCategory", "My Custom Window", 
-    [this](bool* isOpen) { m_windowFunctions->RenderMyCustomWindow(isOpen); });
+    [this](bool* isOpen) { RenderMyCustomWindow(isOpen); });
 ```
 
 **Benefits:**
@@ -279,21 +292,19 @@ The application includes five example windows:
 - ImGui's built-in demo window
 - Shows all available ImGui widgets
 
-**3. RenderHelloWorldWindow()**
-- Interactive controls (slider, button, color picker)
-- Settings demonstration
-- Real-time FPS monitoring
+**3. RenderApplicationWindow()**
+- Combined window with:
+  - Application metadata (framework, rendering, build info)
+  - Window count information
+  - Interactive controls (slider, button, color picker)
+  - Real-time FPS monitoring
+- Merged from Hello World + Application Info for better organization
 
-**4. RenderApplicationInfoWindow()**
-- Application metadata display
-- Window count information
-- Framework and rendering details
-
-**5. RenderImPlotDemoWindow()**
+**4. RenderImPlotDemoWindow()**
 - ImPlot's comprehensive demo window
 - Line plots, scatter plots, and bar charts
 
-**6. RenderURLRequestWindow()**
+**5. RenderURLRequestWindow()**
 - HTTP/HTTPS request client
 - URL input and response display
 - Copy response to clipboard
@@ -461,9 +472,11 @@ m_window = glfwCreateWindow(1920, 1080, "My App", NULL, NULL);
 
 All dependencies are automatically fetched and built by CMake:
 
-- **Dear ImGui** v1.89.9 - UI framework
+- **Dear ImGui** v1.91.0 - UI framework
 - **GLFW** 3.3.8 - Window & input handling
 - **OpenGL** 3.2 - Rendering API
+- **ImPlot** v0.16 - Professional data visualization
+- **libcurl** v8.5.0 - HTTP/HTTPS networking
 - **SimpleIni** - INI file parser (bundled)
 
 No pre-installation required!
@@ -484,12 +497,13 @@ The project includes:
 
 ### Cross-Platform OpenGL Support
 
-The application uses a custom OpenGL function wrapper (`OpenGLFunctions.h`) to ensure cross-platform compatibility:
+The application uses a custom OpenGL function wrapper (`include/WindowFunctions/OpenGLFunctions.h`) to ensure cross-platform compatibility:
 
 - **Dynamic function loading** via `glfwGetProcAddress()`
 - **No system header conflicts** - avoids OpenGL header conflicts with ImGui
 - **Clean rendering pipeline** - proper framebuffer clearing and viewport setup
 - **Artifact-free rendering** - smooth window redrawing when moving windows
+- **Co-located with window infrastructure** - organized in WindowFunctions folder
 
 ### OpenGL Functions Provided
 
@@ -587,12 +601,26 @@ For issues or questions:
 
 ## Recent Updates
 
+### Version 1.8
+- ✅ Merged Hello World and Application Info windows into single Application window
+- ✅ Consolidated all app info and interactive controls in one panel
+- ✅ Moved OpenGLFunctions.h to WindowFunctions folder for better organization
+- ✅ All rendering infrastructure now co-located in WindowFunctions folder
+- ✅ Reduced from 6 to 5 windows for cleaner application interface
+
+### Version 1.7
+- ✅ Moved Settings and SimpleIni to Tools folder
+- ✅ Moved WindowFunction and WindowManager to WindowFunctions folder
+- ✅ Consolidated all rendering infrastructure in dedicated folders
+- ✅ Professional folder organization (Core/Tools/WindowFunctions)
+- ✅ Updated README with new architecture documentation
+
 ### Version 1.6
 - ✅ Added Plot Demo window for data visualization
-- ✅ Uses ImGui's canvas-based drawing (ImDrawList)
-- ✅ Renders a sine wave visualization
-- ✅ Simple, dependency-free plotting solution
-- ✅ Easy to extend with more chart types
+- ✅ Uses ImPlot v0.16 for professional charting
+- ✅ Comprehensive demo showing all plot types
+- ✅ Integrated HTTP client tool for network requests
+- ✅ Settings persistence for all windows
 
 ### Version 1.5.1
 - ✅ Removed Focus button (z-order control not fully working with ImGui)
@@ -637,13 +665,6 @@ For issues or questions:
 ### Version 1.1
 - ✅ Added Settings management system with SimpleIni
 - ✅ Application now persists UI state and display settings
-- ✅ New SETTINGS_GUIDE.md documentation
-- ✅ Centralized includes via precompiled headers
-
-### Version 1.0
-- ✅ Initial release with Dear ImGui + GLFW + CMake
-- ✅ Cross-platform support
-- ✅ Application class architecture
 - ✅ New SETTINGS_GUIDE.md documentation
 - ✅ Centralized includes via precompiled headers
 
