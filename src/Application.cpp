@@ -112,74 +112,86 @@ void Application::RenderFrame()
 
 void Application::SetupWindows()
 {
-    // Demo Window
-    m_windowManager.AddWindow("Windows", "Demo Window", [](bool* isOpen) {
-        ImGui::ShowDemoWindow(isOpen);
-    });
+    // Setup demo window
+    m_windowManager.AddWindow("Windows", "Demo Window", 
+        [this](bool* isOpen) { RenderDemoWindow(isOpen); });
 
-    // Main Control Window
-    m_windowManager.AddWindow("Windows", "Hello World", [this](bool* isOpen) {
-        static float f = 0.0f;
-        static int counter = 0;
+    // Setup hello world window
+    m_windowManager.AddWindow("Windows", "Hello World", 
+        [this](bool* isOpen) { RenderHelloWorldWindow(isOpen); });
 
-        ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_FirstUseEver);
-        if (ImGui::Begin("Hello, world!", isOpen))
+    // Setup application info window
+    m_windowManager.AddWindow("Windows", "Application Info", 
+        [this](bool* isOpen) { RenderApplicationInfoWindow(isOpen); });
+}
+
+void Application::RenderDemoWindow(bool* isOpen)
+{
+    ImGui::ShowDemoWindow(isOpen);
+}
+
+void Application::RenderHelloWorldWindow(bool* isOpen)
+{
+    static float f = 0.0f;
+    static int counter = 0;
+
+    ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("Hello, world!", isOpen))
+    {
+        ImGui::Text("This is some useful text.");
+        ImGui::Separator();
+
+        if (ImGui::CollapsingHeader("Window Controls"))
         {
-            ImGui::Text("This is some useful text.");
-            ImGui::Separator();
-
-            if (ImGui::CollapsingHeader("Window Controls"))
+            WindowFunction* demoWindow = m_windowManager.GetWindow("Demo Window");
+            if (demoWindow)
             {
-                WindowFunction* demoWindow = m_windowManager.GetWindow("Demo Window");
-                if (demoWindow)
+                bool demoEnabled = demoWindow->IsEnabled();
+                if (ImGui::Checkbox("Show Demo Window", &demoEnabled))
                 {
-                    bool demoEnabled = demoWindow->IsEnabled();
-                    if (ImGui::Checkbox("Show Demo Window", &demoEnabled))
-                    {
-                        demoWindow->SetEnabled(demoEnabled);
-                    }
+                    demoWindow->SetEnabled(demoEnabled);
                 }
             }
-
-            if (ImGui::CollapsingHeader("Display Settings"))
-            {
-                ImGui::ColorEdit4("Clear Color", (float*)&m_clearColor);
-            }
-
-            if (ImGui::CollapsingHeader("Interaction"))
-            {
-                ImGui::SliderFloat("Float Slider", &f, 0.0f, 1.0f);
-                if (ImGui::Button("Button"))
-                {
-                    counter++;
-                }
-                ImGui::SameLine();
-                ImGui::Text("Counter = %d", counter);
-            }
-
-            ImGuiIO& io = ImGui::GetIO();
-            ImGui::Separator();
-            ImGui::Text("Performance");
-            ImGui::Text("Average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-
-            ImGui::End();
         }
-    });
 
-    // Info Window
-    m_windowManager.AddWindow("Windows", "Application Info", [this](bool* isOpen) {
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_FirstUseEver);
-        if (ImGui::Begin("Application Info", isOpen))
+        if (ImGui::CollapsingHeader("Display Settings"))
         {
-            ImGui::Text("Dear ImGui Application");
-            ImGui::Separator();
-            ImGui::Text("Windows Managed: %zu", m_windowManager.GetWindowCount());
-            ImGui::Text("Framework: Dear ImGui");
-            ImGui::Text("Rendering: OpenGL 3.2");
-            ImGui::Text("Build: C++17 with CMake");
-            ImGui::End();
+            ImGui::ColorEdit4("Clear Color", (float*)&m_clearColor);
         }
-    });
+
+        if (ImGui::CollapsingHeader("Interaction"))
+        {
+            ImGui::SliderFloat("Float Slider", &f, 0.0f, 1.0f);
+            if (ImGui::Button("Button"))
+            {
+                counter++;
+            }
+            ImGui::SameLine();
+            ImGui::Text("Counter = %d", counter);
+        }
+
+        ImGuiIO& io = ImGui::GetIO();
+        ImGui::Separator();
+        ImGui::Text("Performance");
+        ImGui::Text("Average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+
+        ImGui::End();
+    }
+}
+
+void Application::RenderApplicationInfoWindow(bool* isOpen)
+{
+    ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("Application Info", isOpen))
+    {
+        ImGui::Text("Dear ImGui Application");
+        ImGui::Separator();
+        ImGui::Text("Windows Managed: %zu", m_windowManager.GetWindowCount());
+        ImGui::Text("Framework: Dear ImGui");
+        ImGui::Text("Rendering: OpenGL 3.2");
+        ImGui::Text("Build: C++17 with CMake");
+        ImGui::End();
+    }
 }
 
 void Application::Shutdown()

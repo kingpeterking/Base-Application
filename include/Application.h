@@ -21,6 +21,11 @@ private:
     void RenderFrame();
     void SetupWindows();
 
+    // Window rendering functions
+    void RenderDemoWindow(bool* isOpen);
+    void RenderHelloWorldWindow(bool* isOpen);
+    void RenderApplicationInfoWindow(bool* isOpen);
+
     GLFWwindow* m_window;
     ImVec4 m_clearColor;
 
