@@ -185,22 +185,94 @@ See `SETTINGS_GUIDE.md` for:
 
 ## Extending the Application
 
-### Modular Window System
+### Modular Window System - Refactored Pattern
 
-The application uses a modular window architecture. To add a new window:
+The application uses a clean, scalable window architecture with extracted rendering functions. This pattern makes it easy to add new windows:
 
+**Pattern:**
 ```cpp
-// In Application::SetupWindows()
-m_windowManager.AddWindow("Category", "Window Name", [this](bool* isOpen) {
+// In Application.h (declare rendering function)
+private:
+    void RenderMyCustomWindow(bool* isOpen);
+
+// In Application.cpp (SetupWindows - simple and clean)
+void Application::SetupWindows()
+{
+    m_windowManager.AddWindow("Category", "My Custom Window", 
+        [this](bool* isOpen) { RenderMyCustomWindow(isOpen); });
+}
+
+// In Application.cpp (implement rendering function)
+void Application::RenderMyCustomWindow(bool* isOpen)
+{
     ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Window Name", isOpen)) {
+    if (ImGui::Begin("My Custom Window", isOpen))
+    {
         ImGui::Text("Your window content here");
+        // Add your ImGui widgets here
         ImGui::End();
     }
-});
+}
 ```
 
-See **WINDOW_MANAGER_GUIDE.md** for complete documentation on the window system.
+**Benefits:**
+- ✅ `SetupWindows()` remains clean and shows all windows at a glance
+- ✅ Each window rendering logic is in its own dedicated function
+- ✅ Easy to find and modify window behavior
+- ✅ Follows the Single Responsibility Principle
+- ✅ Scales well as you add more windows
+
+### Current Window Implementations
+
+The application includes three example windows:
+
+**1. RenderDemoWindow()**
+- ImGui's built-in demo window
+- Shows all available ImGui widgets
+
+**2. RenderHelloWorldWindow()**
+- Interactive controls
+- Color picker for background
+- Settings UI example
+- FPS monitoring
+
+**3. RenderApplicationInfoWindow()**
+- Application metadata display
+- Window count information
+- Framework details
+
+### Adding a New Window
+
+To add a new window, follow these steps:
+
+1. **Declare in header:**
+```cpp
+// In include/Application.h
+private:
+    void RenderMyWindow(bool* isOpen);
+```
+
+2. **Implement rendering:**
+```cpp
+// In src/Application.cpp
+void Application::RenderMyWindow(bool* isOpen)
+{
+    if (ImGui::Begin("My Window", isOpen))
+    {
+        ImGui::Text("Hello from my window!");
+        ImGui::End();
+    }
+}
+```
+
+3. **Register in SetupWindows:**
+```cpp
+// In Application::SetupWindows()
+m_windowManager.AddWindow("MyCategory", "My Window", 
+    [this](bool* isOpen) { RenderMyWindow(isOpen); });
+```
+
+That's it! Your window will now appear in the application.
 
 ### Adding Custom UI
 Windows are managed through the WindowManager. Each window is a WindowFunction instance:
@@ -381,6 +453,13 @@ For issues or questions:
 
 ## Recent Updates
 
+### Version 1.3.1
+- ✅ Refactored ImGui window rendering into separate member functions
+- ✅ Cleaner SetupWindows() method - now shows all windows at a glance
+- ✅ Each window has its own dedicated RenderXxxWindow() function
+- ✅ Improved code organization and maintainability
+- ✅ Easier to add new windows following the established pattern
+
 ### Version 1.3
 - ✅ Added OpenGLFunctions.h - Cross-platform OpenGL function wrapper
 - ✅ Fixed window redrawing artifacts - Proper framebuffer clearing with glClear()
@@ -398,6 +477,13 @@ For issues or questions:
 ### Version 1.1
 - ✅ Added Settings management system with SimpleIni
 - ✅ Application now persists UI state and display settings
+- ✅ New SETTINGS_GUIDE.md documentation
+- ✅ Centralized includes via precompiled headers
+
+### Version 1.0
+- ✅ Initial release with Dear ImGui + GLFW + CMake
+- ✅ Cross-platform support
+- ✅ Application class architecture
 - ✅ New SETTINGS_GUIDE.md documentation
 - ✅ Centralized includes via precompiled headers
 
