@@ -1,0 +1,27 @@
+# Build directory
+build/
+cmake-build-*/
+out/
+
+# IDE
+.idea/
+.vscode/
+.vs/
+*.swp
+*.swo
+*~
+*.vcxproj.user
+
+# macOS
+.DS_Store
+
+# Windows
+*.exe
+*.dll
+*.lib
+*.pdb
+
+# Linux
+*.o
+*.a
+*.so
