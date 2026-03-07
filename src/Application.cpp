@@ -173,18 +173,6 @@ void Application::RenderMainMenu(bool* isOpen)
                     {
                         window->SetEnabled(isEnabled);
                     }
-
-                    // If window is already open, add a "Focus" button next to it
-                    if (isEnabled)
-                    {
-                        ImGui::SameLine();
-                        std::string focusLabel = "Focus##" + windowName;
-                        if (ImGui::SmallButton(focusLabel.c_str()))
-                        {
-                            // Mark this window to be rendered topmost
-                            m_windowManager.SetWindowTopmost(windowName);
-                        }
-                    }
                 }
 
                 ImGui::Unindent();
@@ -196,9 +184,7 @@ void Application::RenderMainMenu(bool* isOpen)
 
         ImGui::End();
     }
-}
-
-void Application::RenderDemoWindow(bool* isOpen)
+}void Application::RenderDemoWindow(bool* isOpen)
 {
     ImGui::ShowDemoWindow(isOpen);
 }

@@ -20,13 +20,6 @@ public:
     // Render all enabled windows
     void RenderAllWindows();
 
-    // Render all windows with one specific window rendered last (on top)
-    void RenderAllWindowsWithFocus(const std::string& focusWindowName);
-
-    // Set which window should render on top (persists until cleared)
-    void SetWindowTopmost(const std::string& windowName) { m_topmostWindow = windowName; }
-    void ClearWindowTopmost() { m_topmostWindow.clear(); }
-
     // Get window by name
     WindowFunction* GetWindow(const std::string& windowName);
 
@@ -45,5 +38,4 @@ public:
 
 private:
     std::vector<std::shared_ptr<WindowFunction>> m_windows;
-    std::string m_topmostWindow;  // Window to render on top
 };

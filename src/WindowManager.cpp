@@ -2,8 +2,7 @@
 #include "WindowManager.h"
 
 WindowManager::WindowManager()
-    : m_windows(),
-      m_topmostWindow("")
+    : m_windows()
 {
 }
 
@@ -34,45 +33,9 @@ void WindowManager::RemoveWindow(const std::string& windowName)
 
 void WindowManager::RenderAllWindows()
 {
-    // If a window should be topmost, use the focus render method
-    if (!m_topmostWindow.empty())
-    {
-        RenderAllWindowsWithFocus(m_topmostWindow);
-        m_topmostWindow.clear();  // Clear after rendering
-    }
-    else
-    {
-        // Normal rendering
-        for (auto& window : m_windows)
-        {
-            window->Render();
-        }
-    }
-}
-
-void WindowManager::RenderAllWindowsWithFocus(const std::string& focusWindowName)
-{
-    // Find the window to focus
-    std::shared_ptr<WindowFunction> focusWindow = nullptr;
-
-    // Render all windows except the focus window
     for (auto& window : m_windows)
     {
-        if (window->GetWindowName() == focusWindowName)
-        {
-            focusWindow = window;
-        }
-        else
-        {
-            window->Render();
-        }
-    }
-
-    // Render the focus window last so it appears on top
-    if (focusWindow)
-    {
-        focusWindow->Render();
-        ImGui::SetWindowFocus(focusWindowName.c_str());
+        window->Render();
     }
 }
 
