@@ -13,6 +13,7 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 - ✅ **Settings Management** - INI file persistence system
 - ✅ **Window Manager** - Modular ImGui window architecture
 - ✅ **Main Menu** - Centralized window visibility control
+- ✅ **Data Visualization** - Canvas-based plotting demo
 - ✅ **Self-contained** - No external dependencies to install
 - ✅ **Application Class Architecture** - Clean, extensible design
 - ✅ **Cross-Platform OpenGL** - Smooth rendering across Windows, macOS, and Linux
@@ -133,8 +134,9 @@ The application uses a modular WindowFunction/WindowManager architecture:
 - **Current Windows**:
   - Main Menu - Central window control panel
   - Demo Window - ImGui's comprehensive widget showcase
-  - Hello World - Main control panel
+  - Hello World - Main control panel  
   - Application Info - Framework and performance details
+  - Plot Demo - Data visualization with sine wave chart
 
 All window visibility settings are persisted across application runs.
 
@@ -529,6 +531,13 @@ For issues or questions:
 5. Open an issue on GitHub
 
 ## Recent Updates
+
+### Version 1.6
+- ✅ Added Plot Demo window for data visualization
+- ✅ Uses ImGui's canvas-based drawing (ImDrawList)
+- ✅ Renders a sine wave visualization
+- ✅ Simple, dependency-free plotting solution
+- ✅ Easy to extend with more chart types
 
 ### Version 1.5.1
 - ✅ Removed Focus button (z-order control not fully working with ImGui)
