@@ -11,7 +11,7 @@ public:
     ~WindowManager();
 
     // Add a window function
-    void AddWindow(const std::string& menuName, const std::string& windowName, 
+    void AddWindow(const std::string& type, const std::string& menuName, const std::string& windowName, 
                    WindowFunction::WindowRenderFunction renderFunc);
 
     // Remove a window by name

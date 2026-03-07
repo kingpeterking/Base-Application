@@ -114,19 +114,19 @@ void Application::RenderFrame()
 void Application::SetupWindows()
 {
     // Main menu window (always first for easy access)
-    m_windowManager.AddWindow("Main", "Main Menu", 
+    m_windowManager.AddWindow("Application", "Main", "Main Menu", 
         [this](bool* isOpen) { RenderMainMenu(isOpen); });
 
     // Setup demo window
-    m_windowManager.AddWindow("Windows", "Demo Window", 
+    m_windowManager.AddWindow("Panels", "Windows", "Demo Window", 
         [this](bool* isOpen) { RenderDemoWindow(isOpen); });
 
     // Setup hello world window
-    m_windowManager.AddWindow("Windows", "Hello World", 
+    m_windowManager.AddWindow("Panels", "Windows", "Hello World", 
         [this](bool* isOpen) { RenderHelloWorldWindow(isOpen); });
 
     // Setup application info window
-    m_windowManager.AddWindow("Windows", "Application Info", 
+    m_windowManager.AddWindow("Panels", "Windows", "Application Info", 
         [this](bool* isOpen) { RenderApplicationInfoWindow(isOpen); });
 }
 
@@ -140,36 +140,53 @@ void Application::RenderMainMenu(bool* isOpen)
         ImGui::Text("Available Windows");
         ImGui::Separator();
 
-        // Iterate through all windows and display toggle controls
+        // Iterate through all windows and display toggle controls grouped by type
         const auto& allWindows = m_windowManager.GetAllWindows();
 
+        // Collect unique types
+        std::map<std::string, std::vector<std::shared_ptr<WindowFunction>>> windowsByType;
         for (const auto& window : allWindows)
         {
             // Skip the main menu itself
             if (window->GetWindowName() == "Main Menu")
                 continue;
 
-            std::string menuName = window->GetMenuName();
-            std::string windowName = window->GetWindowName();
-            bool isEnabled = window->IsEnabled();
+            windowsByType[window->GetType()].push_back(window);
+        }
 
-            // Create a unique ID for this checkbox
-            std::string checkboxLabel = windowName + "##window_toggle";
-
-            if (ImGui::Checkbox(checkboxLabel.c_str(), &isEnabled))
+        // Render windows grouped by type
+        for (const auto& [type, windows] : windowsByType)
+        {
+            if (ImGui::CollapsingHeader(type.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
             {
-                window->SetEnabled(isEnabled);
-            }
+                ImGui::Indent();
 
-            // If window is already open, add a "Focus" button next to it
-            if (isEnabled)
-            {
-                ImGui::SameLine();
-                std::string focusLabel = "Focus##" + windowName;
-                if (ImGui::SmallButton(focusLabel.c_str()))
+                for (const auto& window : windows)
                 {
-                    ImGui::SetWindowFocus(windowName.c_str());
+                    std::string windowName = window->GetWindowName();
+                    bool isEnabled = window->IsEnabled();
+
+                    // Create a unique ID for this checkbox
+                    std::string checkboxLabel = windowName + "##window_toggle";
+
+                    if (ImGui::Checkbox(checkboxLabel.c_str(), &isEnabled))
+                    {
+                        window->SetEnabled(isEnabled);
+                    }
+
+                    // If window is already open, add a "Focus" button next to it
+                    if (isEnabled)
+                    {
+                        ImGui::SameLine();
+                        std::string focusLabel = "Focus##" + windowName;
+                        if (ImGui::SmallButton(focusLabel.c_str()))
+                        {
+                            ImGui::SetWindowFocus(windowName.c_str());
+                        }
+                    }
                 }
+
+                ImGui::Unindent();
             }
         }
 

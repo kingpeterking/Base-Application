@@ -11,10 +11,10 @@ WindowManager::~WindowManager()
     m_windows.clear();
 }
 
-void WindowManager::AddWindow(const std::string& menuName, const std::string& windowName, 
+void WindowManager::AddWindow(const std::string& type, const std::string& menuName, const std::string& windowName, 
                               WindowFunction::WindowRenderFunction renderFunc)
 {
-    auto window = std::make_shared<WindowFunction>(menuName, windowName, renderFunc);
+    auto window = std::make_shared<WindowFunction>(type, menuName, windowName, renderFunc);
     m_windows.push_back(window);
 }
 
