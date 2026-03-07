@@ -6,7 +6,7 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 
 - ✅ **Dear ImGui** - Immediate mode GUI framework
 - ✅ **GLFW** - Window creation and event handling
-- ✅ **OpenGL 3.2** - Hardware-accelerated rendering
+- ✅ **OpenGL 3.2** - Hardware-accelerated rendering with cross-platform support
 - ✅ **CMake** - Cross-platform build system
 - ✅ **C++17** - Modern C++ standard
 - ✅ **Precompiled Headers** - Fast incremental builds
@@ -14,6 +14,7 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 - ✅ **Window Manager** - Modular ImGui window architecture
 - ✅ **Self-contained** - No external dependencies to install
 - ✅ **Application Class Architecture** - Clean, extensible design
+- ✅ **Cross-Platform OpenGL** - Smooth rendering across Windows, macOS, and Linux
 
 ## Project Structure
 
@@ -26,6 +27,7 @@ Base-Application/
 │   ├── SimpleIni.h                 # INI file parser
 │   ├── WindowFunction.h            # ImGui window wrapper class
 │   ├── WindowManager.h             # Window manager class
+│   ├── OpenGLFunctions.h           # Cross-platform OpenGL function wrappers
 │   └── pch.h                       # Precompiled headers
 ├── src/
 │   ├── main.cpp                    # Entry point
@@ -37,7 +39,8 @@ Base-Application/
 ├── .gitignore                      # Git ignore rules
 ├── README.md                       # This file
 ├── SETTINGS_GUIDE.md               # Settings usage documentation
-└── WINDOW_MANAGER_GUIDE.md         # Window management documentation
+├── WINDOW_MANAGER_GUIDE.md         # Window management documentation
+└── IMPLEMENTATION_SUMMARY.md       # Implementation details
 ```
 
 ## Prerequisites
@@ -271,6 +274,27 @@ The project includes:
 - **First build**: ~20-30 seconds (dependencies compiled)
 - **Incremental builds**: ~2-5 seconds (PCH reduces recompilation)
 
+## Rendering System
+
+### Cross-Platform OpenGL Support
+
+The application uses a custom OpenGL function wrapper (`OpenGLFunctions.h`) to ensure cross-platform compatibility:
+
+- **Dynamic function loading** via `glfwGetProcAddress()`
+- **No system header conflicts** - avoids OpenGL header conflicts with ImGui
+- **Clean rendering pipeline** - proper framebuffer clearing and viewport setup
+- **Artifact-free rendering** - smooth window redrawing when moving windows
+
+### OpenGL Functions Provided
+
+- `GLFunc::glViewport()` - Set rendering viewport
+- `GLFunc::glClearColor()` - Set framebuffer clear color
+- `GLFunc::glClear()` - Clear framebuffer buffers
+- `GLFunc::GL_COLOR_BUFFER_BIT` - Color buffer constant
+- `GLFunc::GL_DEPTH_BUFFER_BIT` - Depth buffer constant
+
+These functions are automatically initialized in `Application::Initialize()` after creating the OpenGL context.
+
 ## Troubleshooting
 
 ### Build Errors
@@ -356,6 +380,13 @@ For issues or questions:
 5. Open an issue on GitHub
 
 ## Recent Updates
+
+### Version 1.3
+- ✅ Added OpenGLFunctions.h - Cross-platform OpenGL function wrapper
+- ✅ Fixed window redrawing artifacts - Proper framebuffer clearing with glClear()
+- ✅ Fixed glViewport implementation - Viewport properly set to framebuffer size
+- ✅ Improved rendering pipeline - glClearColor now applied from settings
+- ✅ Dynamic function pointer loading via glfwGetProcAddress for maximum compatibility
 
 ### Version 1.2
 - ✅ Added WindowFunction and WindowManager classes

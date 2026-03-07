@@ -39,6 +39,9 @@ bool Application::Initialize()
     glfwMakeContextCurrent(m_window);
     glfwSwapInterval(1); // Enable vsync
 
+    // Initialize OpenGL function pointers
+    GLFunc::InitFunctions();
+
     SetupImGui();
     SetupWindows();
     LoadSettings();
@@ -78,6 +81,17 @@ void Application::Run()
 
 void Application::RenderFrame()
 {
+    // Get framebuffer size
+    int display_w, display_h;
+    glfwGetFramebufferSize(m_window, &display_w, &display_h);
+
+    // Set OpenGL viewport
+    GLFunc::glViewport(0, 0, display_w, display_h);
+
+    // Clear framebuffer
+    GLFunc::glClearColor(m_clearColor.x, m_clearColor.y, m_clearColor.z, m_clearColor.w);
+    GLFunc::glClear(GLFunc::GL_COLOR_BUFFER_BIT | GLFunc::GL_DEPTH_BUFFER_BIT);
+
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -89,11 +103,10 @@ void Application::RenderFrame()
     // Rendering
     ImGui::Render();
 
-    int display_w, display_h;
-    glfwGetFramebufferSize(m_window, &display_w, &display_h);
-
+    // Render ImGui draw data
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+    // Swap buffers
     glfwSwapBuffers(m_window);
 }
 
