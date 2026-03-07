@@ -13,7 +13,7 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 - ✅ **Settings Management** - INI file persistence system
 - ✅ **Window Manager** - Modular ImGui window architecture
 - ✅ **Main Menu** - Centralized window visibility control
-- ✅ **Data Visualization** - Canvas-based plotting demo
+- ✅ **ImPlot** - Professional data visualization and plotting library
 - ✅ **Self-contained** - No external dependencies to install
 - ✅ **Application Class Architecture** - Clean, extensible design
 - ✅ **Cross-Platform OpenGL** - Smooth rendering across Windows, macOS, and Linux
@@ -235,7 +235,7 @@ void Application::RenderMyCustomWindow(bool* isOpen)
 
 ### Current Window Implementations
 
-The application includes three example windows:
+The application includes four example windows:
 
 **1. RenderDemoWindow()**
 - ImGui's built-in demo window
@@ -251,6 +251,13 @@ The application includes three example windows:
 - Application metadata display
 - Window count information
 - Framework details
+
+**4. RenderImPlotDemoWindow()**
+- ImPlot library demonstration
+- Multiple data visualization examples
+- Trigonometric function plots (sin, cos)
+- Plot lines and scatter markers
+- Professional plotting capabilities
 
 ### Adding a New Window
 
