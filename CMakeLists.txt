@@ -61,6 +61,7 @@ add_executable(ImGuiApp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
     ${implot_SOURCE_DIR}/implot.cpp
     ${implot_SOURCE_DIR}/implot_items.cpp
+    ${implot_SOURCE_DIR}/implot_demo.cpp
 )
 
 # Include directories

@@ -57,6 +57,9 @@ void Application::SetupImGui()
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
+    // Setup ImPlot context
+    ImPlot::CreateContext();
+
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
 
@@ -259,43 +262,7 @@ void Application::RenderApplicationInfoWindow(bool* isOpen)
 
 void Application::RenderImPlotDemoWindow(bool* isOpen)
 {
-    ImGui::SetNextWindowSize(ImVec2(900, 700), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Plot Demo", isOpen))
-    {
-        ImGui::Text("ImPlot Data Visualization");
-        ImGui::Separator();
-
-        // Generate sample data
-        static float xs[100], ys1[100], ys2[100];
-        static bool initialized = false;
-        if (!initialized)
-        {
-            for (int i = 0; i < 100; ++i)
-            {
-                xs[i] = i * 0.1f;
-                ys1[i] = sinf(xs[i]);
-                ys2[i] = cosf(xs[i]);
-            }
-            initialized = true;
-        }
-
-        if (ImPlot::BeginPlot("Trigonometric Functions", ImVec2(-1, 400)))
-        {
-            ImPlot::SetupAxes("X", "Y");
-            ImPlot::SetupAxesLimits(0, 10, -1.5, 1.5);
-
-            // Plot lines
-            ImPlot::PlotLine("sin(x)", xs, ys1, 100);
-            ImPlot::PlotLine("cos(x)", xs, ys2, 100);
-
-            // Plot markers
-            ImPlot::PlotScatter("sin(x) points", xs, ys1, 100);
-
-            ImPlot::EndPlot();
-        }
-
-        ImGui::End();
-    }
+    ImPlot::ShowDemoWindow(isOpen);
 }
 
 void Application::Shutdown()
