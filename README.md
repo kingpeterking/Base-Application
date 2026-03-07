@@ -206,7 +206,8 @@ private:
 // In Application.cpp (SetupWindows - simple and clean)
 void Application::SetupWindows()
 {
-    m_windowManager.AddWindow("Category", "My Custom Window", 
+    // Format: AddWindow(TYPE, MENU_NAME, WINDOW_NAME, RENDER_FUNCTION)
+    m_windowManager.AddWindow("Panels", "MyCategory", "My Custom Window", 
         [this](bool* isOpen) { RenderMyCustomWindow(isOpen); });
 }
 
@@ -229,6 +230,7 @@ void Application::RenderMyCustomWindow(bool* isOpen)
 - ✅ Easy to find and modify window behavior
 - ✅ Follows the Single Responsibility Principle
 - ✅ Scales well as you add more windows
+- ✅ **Windows automatically grouped by type in the Main Menu**
 
 ### Current Window Implementations
 
@@ -276,11 +278,12 @@ void Application::RenderMyWindow(bool* isOpen)
 3. **Register in SetupWindows:**
 ```cpp
 // In Application::SetupWindows()
-m_windowManager.AddWindow("MyCategory", "My Window", 
+// Format: AddWindow(TYPE, MENU_NAME, WINDOW_NAME, RENDER_FUNCTION)
+m_windowManager.AddWindow("Panels", "MyCategory", "My Window", 
     [this](bool* isOpen) { RenderMyWindow(isOpen); });
 ```
 
-That's it! Your window will now appear in the application.
+The window will now appear in the Main Menu under the "Panels" category, with toggle and focus controls.
 
 ### Adding Custom UI
 Windows are managed through the WindowManager. Each window is a WindowFunction instance:
@@ -312,19 +315,35 @@ m_settings.SetString("Windows", "MyWindowData", "your_data");
 
 ## Using the Main Menu
 
-The **Main Menu** window provides centralized control over all application windows:
+The **Main Menu** window provides centralized control over all application windows organized by type:
 
 ### Features
-- **Window List** - Shows all available windows
+- **Organized by Type** - Windows grouped into categories (Application, Panels, etc.)
+- **Collapsible Sections** - Each type has a collapsible header showing all windows of that type
+- **Window List** - Shows all available windows within each category
 - **Toggle Controls** - Checkboxes to enable/disable each window
 - **Focus Button** - Brings an already-open window to the front
 - **Always Available** - Main Menu is always visible by default
 
+### Window Organization
+
+**Example structure:**
+```
+Main Menu
+├─ Application (collapsible)
+│  └─ ☑ Main Menu [Focus]
+├─ Panels (collapsible)
+│  ├─ ☑ Demo Window [Focus]
+│  ├─ ☑ Hello World [Focus]
+│  └─ ☑ Application Info [Focus]
+```
+
 ### Window Recovery
 If you accidentally close a window and can't find it:
 1. The **Main Menu** is always visible by default
-2. Find the window name in the Main Menu
-3. Check the checkbox to show the window again
+2. Find the window's category section
+3. Expand the section if collapsed
+4. Check the checkbox next to the window name
 
 ### User Experience Flow
 ```
@@ -338,10 +357,29 @@ If you accidentally close a window and can't find it:
 
 ### Extending with New Windows
 When you add new windows (following the pattern in "Extending the Application" section), they automatically:
-- Appear in the Main Menu
+- Appear in the Main Menu under their type category
 - Get toggle checkboxes for visibility control
 - Get a Focus button if already open
 - Have their visibility persisted in settings
+
+### Window Types
+
+The type parameter groups windows in the Main Menu. Common types:
+- `"Application"` - Core application windows (Main Menu, Settings, etc.)
+- `"Panels"` - Content/display panels (Demo, Info, etc.)
+- `"Tools"` - Utility windows (Console, Debug, etc.)
+- Custom types - Create your own categories as needed
+
+**Example with different types:**
+```cpp
+// These will appear under "Tools" section in the menu
+m_windowManager.AddWindow("Tools", "Development", "Debug Console", 
+    [this](bool* isOpen) { RenderDebugConsole(isOpen); });
+
+// These will appear under "Panels" section
+m_windowManager.AddWindow("Panels", "Content", "Viewport", 
+    [this](bool* isOpen) { RenderViewport(isOpen); });
+```
 
 ## Build Configuration
 
@@ -493,6 +531,13 @@ For issues or questions:
 5. Open an issue on GitHub
 
 ## Recent Updates
+
+### Version 1.5
+- ✅ Added window type/category system for better organization
+- ✅ Main Menu now groups windows by type in collapsible sections
+- ✅ Types: "Application", "Panels", etc. (easily extensible)
+- ✅ Cleaner menu UI with logical window grouping
+- ✅ Updated AddWindow() to require type parameter
 
 ### Version 1.4
 - ✅ Added Main Menu window - Central hub for window visibility control
