@@ -11,6 +11,7 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 - ✅ **C++17** - Modern C++ standard
 - ✅ **Precompiled Headers** - Fast incremental builds
 - ✅ **Settings Management** - INI file persistence system
+- ✅ **Window Manager** - Modular ImGui window architecture
 - ✅ **Self-contained** - No external dependencies to install
 - ✅ **Application Class Architecture** - Clean, extensible design
 
@@ -18,20 +19,25 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 
 ```
 Base-Application/
-├── CMakeLists.txt              # Build configuration
+├── CMakeLists.txt                  # Build configuration
 ├── include/
-│   ├── Application.h           # Main application class
-│   ├── Settings.h              # Settings management class
-│   ├── SimpleIni.h             # INI file parser
-│   └── pch.h                   # Precompiled headers
+│   ├── Application.h               # Main application class
+│   ├── Settings.h                  # Settings management class
+│   ├── SimpleIni.h                 # INI file parser
+│   ├── WindowFunction.h            # ImGui window wrapper class
+│   ├── WindowManager.h             # Window manager class
+│   └── pch.h                       # Precompiled headers
 ├── src/
-│   ├── main.cpp                # Entry point
-│   ├── Application.cpp         # Application implementation
-│   ├── Settings.cpp            # Settings implementation
-│   └── pch.cpp                 # PCH source file
-├── .gitignore                  # Git ignore rules
-├── README.md                   # This file
-└── SETTINGS_GUIDE.md           # Settings usage documentation
+│   ├── main.cpp                    # Entry point
+│   ├── Application.cpp             # Application implementation
+│   ├── Settings.cpp                # Settings implementation
+│   ├── WindowFunction.cpp          # Window function implementation
+│   ├── WindowManager.cpp           # Window manager implementation
+│   └── pch.cpp                     # PCH source file
+├── .gitignore                      # Git ignore rules
+├── README.md                       # This file
+├── SETTINGS_GUIDE.md               # Settings usage documentation
+└── WINDOW_MANAGER_GUIDE.md         # Window management documentation
 ```
 
 ## Prerequisites
@@ -111,6 +117,17 @@ You should see a window with:
 - ✅ Window management
 - ✅ FPS monitoring
 
+### Window Management System
+The application uses a modular WindowFunction/WindowManager architecture:
+- **WindowFunction** - Encapsulates ImGui window rendering logic
+- **WindowManager** - Manages a collection of windows
+- **Current Windows**:
+  - Demo Window - ImGui's comprehensive widget showcase
+  - Hello World - Main control panel
+  - Application Info - Framework and performance details
+
+All window visibility settings are persisted across application runs.
+
 ### ImGui Demo Window
 The application includes ImGui's built-in demo window showing hundreds of UI widgets and capabilities.
 
@@ -165,47 +182,49 @@ See `SETTINGS_GUIDE.md` for:
 
 ## Extending the Application
 
-### Adding Custom UI
-Edit `src/Application.cpp` and modify the `RenderFrame()` method to add your own ImGui widgets:
+### Modular Window System
+
+The application uses a modular window architecture. To add a new window:
 
 ```cpp
-ImGui::Begin("My Custom Window");
-ImGui::Text("Hello, Custom UI!");
-ImGui::SliderFloat("My Slider", &myValue, 0.0f, 1.0f);
-if (ImGui::Button("My Button")) {
-    // Handle button click
-}
-ImGui::End();
+// In Application::SetupWindows()
+m_windowManager.AddWindow("Category", "Window Name", [this](bool* isOpen) {
+    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("Window Name", isOpen)) {
+        ImGui::Text("Your window content here");
+        ImGui::End();
+    }
+});
 ```
 
-### Adding Custom Logic
-Extend the `Application` class to add application-specific functionality:
+See **WINDOW_MANAGER_GUIDE.md** for complete documentation on the window system.
 
-1. Add member variables to `include/Application.h`
-2. Implement logic in `src/Application.cpp`
-3. Call your functions from `RenderFrame()` or `Run()`
-
-### Persisting Custom Settings
+### Adding Custom UI
+Windows are managed through the WindowManager. Each window is a WindowFunction instance:
 
 ```cpp
-// In Application.h
-private:
-    std::string m_playerName;
-    int m_level;
-    void LoadSettings();
-    void SaveSettings();
+// To control a window
+WindowFunction* myWindow = m_windowManager.GetWindow("Window Name");
+if (myWindow) {
+    myWindow->SetEnabled(false);  // Hide
+    myWindow->ToggleEnabled();    // Toggle visibility
+}
+```
 
-// In Application.cpp constructor
-LoadSettings();
+### Persisting Window State
 
+Window visibility is automatically saved and restored. To persist additional window data:
+
+```cpp
 // In LoadSettings()
-m_playerName = m_settings.GetString("Player", "Name", "Player1");
-m_level = m_settings.GetInt("Player", "Level", 1);
+if (m_settings.KeyExists("Windows", "MyWindowData"))
+{
+    std::string data = m_settings.GetString("Windows", "MyWindowData", "default");
+    // Use data...
+}
 
 // In SaveSettings()
-m_settings.SetString("Player", "Name", m_playerName);
-m_settings.SetInt("Player", "Level", m_level);
-m_settings.Save();
+m_settings.SetString("Windows", "MyWindowData", "your_data");
 ```
 
 ## Build Configuration
@@ -332,10 +351,18 @@ To extend this project:
 For issues or questions:
 1. Check the troubleshooting section above
 2. Review [SETTINGS_GUIDE.md](SETTINGS_GUIDE.md) for settings-related questions
-3. Review the ImGui/GLFW documentation
-4. Open an issue on GitHub
+3. Review [WINDOW_MANAGER_GUIDE.md](WINDOW_MANAGER_GUIDE.md) for window management questions
+4. Review the ImGui/GLFW documentation
+5. Open an issue on GitHub
 
 ## Recent Updates
+
+### Version 1.2
+- ✅ Added WindowFunction and WindowManager classes
+- ✅ Modular window architecture with proper encapsulation
+- ✅ Window visibility settings now persisted
+- ✅ New WINDOW_MANAGER_GUIDE.md documentation
+- ✅ Easy window creation and management system
 
 ### Version 1.1
 - ✅ Added Settings management system with SimpleIni
