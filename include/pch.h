@@ -45,3 +45,6 @@
 // Tools
 #include "Tools/HTTPClient.h"
 #include "Tools/ImPlotClient.h"
+
+// Forward declaration for WindowFunctions
+class WindowFunctions;

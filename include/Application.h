@@ -5,6 +5,7 @@
 #include "WindowManager.h"
 #include "Tools/HTTPClient.h"
 #include "Tools/ImPlotClient.h"
+#include "WindowFunctions/WindowFunctions.h"
 
 struct GLFWwindow;
 
@@ -23,7 +24,7 @@ private:
     void RenderFrame();
     void SetupWindows();
 
-    // Window rendering functions
+    // Window rendering functions (delegated to WindowFunctions)
     void RenderMainMenu(bool* isOpen);
     void RenderDemoWindow(bool* isOpen);
     void RenderHelloWorldWindow(bool* isOpen);
@@ -38,6 +39,7 @@ private:
     // Tool clients
     HTTPClient m_httpClient;
     ImPlotClient m_implotClient;
+    std::unique_ptr<WindowFunctions> m_windowFunctions;
 
     // URL Request state
     static constexpr size_t URL_BUFFER_SIZE = 512;
@@ -52,4 +54,8 @@ private:
     // Settings keys
     void LoadSettings();
     void SaveSettings();
+
+    // Friend class for window rendering
+    friend class WindowFunctions;
 };
+

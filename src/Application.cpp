@@ -118,6 +118,9 @@ void Application::RenderFrame()
 
 void Application::SetupWindows()
 {
+    // Create WindowFunctions instance
+    m_windowFunctions = std::make_unique<WindowFunctions>(this);
+
     // Main menu window (always first for easy access)
     m_windowManager.AddWindow("Application", "Main", "Main Menu", 
         [this](bool* isOpen) { RenderMainMenu(isOpen); });
@@ -143,195 +146,35 @@ void Application::SetupWindows()
         [this](bool* isOpen) { RenderURLRequestWindow(isOpen); });
 }
 
+// Window rendering delegations to WindowFunctions
 void Application::RenderMainMenu(bool* isOpen)
 {
-    ImGui::SetNextWindowSize(ImVec2(400, 500), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_FirstUseEver);
+    m_windowFunctions->RenderMainMenu(isOpen);
+}
 
-    if (ImGui::Begin("Main Menu", isOpen, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::Text("Available Windows");
-        ImGui::Separator();
-
-        // Iterate through all windows and display toggle controls grouped by type
-        const auto& allWindows = m_windowManager.GetAllWindows();
-
-        // Collect unique types
-        std::map<std::string, std::vector<std::shared_ptr<WindowFunction>>> windowsByType;
-        for (const auto& window : allWindows)
-        {
-            // Skip the main menu itself
-            if (window->GetWindowName() == "Main Menu")
-                continue;
-
-            windowsByType[window->GetType()].push_back(window);
-        }
-
-        // Render windows grouped by type
-        for (const auto& [type, windows] : windowsByType)
-        {
-            if (ImGui::CollapsingHeader(type.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
-            {
-                ImGui::Indent();
-
-                for (const auto& window : windows)
-                {
-                    std::string windowName = window->GetWindowName();
-                    bool isEnabled = window->IsEnabled();
-
-                    // Create a unique ID for this checkbox
-                    std::string checkboxLabel = windowName + "##window_toggle";
-
-                    if (ImGui::Checkbox(checkboxLabel.c_str(), &isEnabled))
-                    {
-                        window->SetEnabled(isEnabled);
-                    }
-                }
-
-                ImGui::Unindent();
-            }
-        }
-
-        ImGui::Separator();
-        ImGui::Text("Total Windows: %zu", allWindows.size() - 1); // -1 for the main menu itself
-
-        ImGui::End();
-    }
-}void Application::RenderDemoWindow(bool* isOpen)
+void Application::RenderDemoWindow(bool* isOpen)
 {
-    ImGui::ShowDemoWindow(isOpen);
+    m_windowFunctions->RenderDemoWindow(isOpen);
 }
 
 void Application::RenderHelloWorldWindow(bool* isOpen)
 {
-    static float f = 0.0f;
-    static int counter = 0;
-
-    ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Hello, world!", isOpen))
-    {
-        ImGui::Text("This is some useful text.");
-        ImGui::Separator();
-
-        if (ImGui::CollapsingHeader("Window Controls"))
-        {
-            WindowFunction* demoWindow = m_windowManager.GetWindow("Demo Window");
-            if (demoWindow)
-            {
-                bool demoEnabled = demoWindow->IsEnabled();
-                if (ImGui::Checkbox("Show Demo Window", &demoEnabled))
-                {
-                    demoWindow->SetEnabled(demoEnabled);
-                }
-            }
-        }
-
-        if (ImGui::CollapsingHeader("Display Settings"))
-        {
-            ImGui::ColorEdit4("Clear Color", (float*)&m_clearColor);
-        }
-
-        if (ImGui::CollapsingHeader("Interaction"))
-        {
-            ImGui::SliderFloat("Float Slider", &f, 0.0f, 1.0f);
-            if (ImGui::Button("Button"))
-            {
-                counter++;
-            }
-            ImGui::SameLine();
-            ImGui::Text("Counter = %d", counter);
-        }
-
-        ImGuiIO& io = ImGui::GetIO();
-        ImGui::Separator();
-        ImGui::Text("Performance");
-        ImGui::Text("Average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-
-        ImGui::End();
-    }
+    m_windowFunctions->RenderHelloWorldWindow(isOpen);
 }
 
 void Application::RenderApplicationInfoWindow(bool* isOpen)
 {
-    ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Application Info", isOpen))
-    {
-        ImGui::Text("Dear ImGui Application");
-        ImGui::Separator();
-        ImGui::Text("Windows Managed: %zu", m_windowManager.GetWindowCount());
-        ImGui::Text("Framework: Dear ImGui");
-        ImGui::Text("Rendering: OpenGL 3.2");
-        ImGui::Text("Build: C++17 with CMake");
-        ImGui::End();
-    }
+    m_windowFunctions->RenderApplicationInfoWindow(isOpen);
 }
 
 void Application::RenderImPlotDemoWindow(bool* isOpen)
 {
-    m_implotClient.RenderDemoWindow(isOpen);
+    m_windowFunctions->RenderImPlotDemoWindow(isOpen);
 }
 
 void Application::RenderURLRequestWindow(bool* isOpen)
 {
-    ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("URL Request", isOpen))
-    {
-        ImGui::Text("HTTP Request Tool");
-        ImGui::Separator();
-
-        // URL input
-        ImGui::Text("URL:");
-        ImGui::InputText("##url_input", m_urlBuffer, URL_BUFFER_SIZE);
-
-        ImGui::SameLine();
-
-        // Send button
-        if (ImGui::Button("Send Request") && !m_httpClient.IsLoading())
-        {
-            m_httpClient.PerformRequest(m_urlBuffer);
-        }
-
-        ImGui::Separator();
-
-        // Status
-        if (m_httpClient.IsLoading())
-        {
-            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Loading...");
-        }
-        else if (!m_httpClient.GetError().empty())
-        {
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%s", m_httpClient.GetError().c_str());
-        }
-        else if (!m_httpClient.GetResponse().empty())
-        {
-            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Success! Response: %zu bytes", m_httpClient.GetResponse().size());
-        }
-
-        ImGui::Separator();
-        ImGui::Text("Response:");
-
-        // Response display with scrollbar
-        ImGui::BeginChild("response_scroll", ImVec2(0, -50), true, ImGuiWindowFlags_HorizontalScrollbar);
-        ImGui::TextUnformatted(m_httpClient.GetResponse().c_str(), m_httpClient.GetResponse().c_str() + m_httpClient.GetResponse().size());
-        ImGui::EndChild();
-
-        // Copy button
-        if (!m_httpClient.GetResponse().empty())
-        {
-            if (ImGui::Button("Copy Response"))
-            {
-                ImGui::SetClipboardText(m_httpClient.GetResponse().c_str());
-            }
-            ImGui::SameLine();
-        }
-
-        if (ImGui::Button("Clear"))
-        {
-            m_httpClient.ClearAll();
-        }
-
-        ImGui::End();
-    }
+    m_windowFunctions->RenderURLRequestWindow(isOpen);
 }
 
 void Application::Shutdown()
