@@ -9,8 +9,7 @@ public:
     // Window rendering functions
     void RenderMainMenu(bool* isOpen);
     void RenderDemoWindow(bool* isOpen);
-    void RenderHelloWorldWindow(bool* isOpen);
-    void RenderApplicationInfoWindow(bool* isOpen);
+    void RenderApplicationWindow(bool* isOpen);
     void RenderImPlotDemoWindow(bool* isOpen);
     void RenderURLRequestWindow(bool* isOpen);
 

@@ -73,14 +73,24 @@ void WindowFunctions::RenderDemoWindow(bool* isOpen)
     ImGui::ShowDemoWindow(isOpen);
 }
 
-void WindowFunctions::RenderHelloWorldWindow(bool* isOpen)
+void WindowFunctions::RenderApplicationWindow(bool* isOpen)
 {
     static float f = 0.0f;
     static int counter = 0;
 
-    ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Hello, world!", isOpen))
+    ImGui::SetNextWindowSize(ImVec2(500, 500), ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("Application", isOpen))
     {
+        // Application Info Section
+        ImGui::Text("Dear ImGui Application");
+        ImGui::Separator();
+        ImGui::Text("Windows Managed: %zu", m_app->m_windowManager.GetWindowCount());
+        ImGui::Text("Framework: Dear ImGui");
+        ImGui::Text("Rendering: OpenGL 3.2");
+        ImGui::Text("Build: C++17 with CMake");
+        ImGui::Separator();
+
+        // Interactive Controls Section
         ImGui::Text("This is some useful text.");
         ImGui::Separator();
 
@@ -118,21 +128,6 @@ void WindowFunctions::RenderHelloWorldWindow(bool* isOpen)
         ImGui::Text("Performance");
         ImGui::Text("Average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
-        ImGui::End();
-    }
-}
-
-void WindowFunctions::RenderApplicationInfoWindow(bool* isOpen)
-{
-    ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Application Info", isOpen))
-    {
-        ImGui::Text("Dear ImGui Application");
-        ImGui::Separator();
-        ImGui::Text("Windows Managed: %zu", m_app->m_windowManager.GetWindowCount());
-        ImGui::Text("Framework: Dear ImGui");
-        ImGui::Text("Rendering: OpenGL 3.2");
-        ImGui::Text("Build: C++17 with CMake");
         ImGui::End();
     }
 }

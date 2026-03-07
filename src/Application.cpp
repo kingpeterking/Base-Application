@@ -126,19 +126,15 @@ void Application::SetupWindows()
         [this](bool* isOpen) { RenderMainMenu(isOpen); });
 
     // Setup demo window
-    m_windowManager.AddWindow("Panels", "Windows", "Demo Window", 
+    m_windowManager.AddWindow("Tools", "Windows", "Demo Window", 
         [this](bool* isOpen) { RenderDemoWindow(isOpen); });
 
-    // Setup hello world window
-    m_windowManager.AddWindow("Panels", "Windows", "Hello World", 
-        [this](bool* isOpen) { RenderHelloWorldWindow(isOpen); });
-
-    // Setup application info window
-    m_windowManager.AddWindow("Panels", "Windows", "Application Info", 
-        [this](bool* isOpen) { RenderApplicationInfoWindow(isOpen); });
+    // Setup application window (merged Hello World + Application Info)
+    m_windowManager.AddWindow("Panels", "Windows", "Application", 
+        [this](bool* isOpen) { RenderApplicationWindow(isOpen); });
 
     // Setup ImPlot demo window
-    m_windowManager.AddWindow("Panels", "Plotting", "Plot Demo", 
+    m_windowManager.AddWindow("Tools", "Plotting", "Plot Demo", 
         [this](bool* isOpen) { RenderImPlotDemoWindow(isOpen); });
 
     // Setup URL request window
@@ -157,14 +153,9 @@ void Application::RenderDemoWindow(bool* isOpen)
     m_windowFunctions->RenderDemoWindow(isOpen);
 }
 
-void Application::RenderHelloWorldWindow(bool* isOpen)
+void Application::RenderApplicationWindow(bool* isOpen)
 {
-    m_windowFunctions->RenderHelloWorldWindow(isOpen);
-}
-
-void Application::RenderApplicationInfoWindow(bool* isOpen)
-{
-    m_windowFunctions->RenderApplicationInfoWindow(isOpen);
+    m_windowFunctions->RenderApplicationWindow(isOpen);
 }
 
 void Application::RenderImPlotDemoWindow(bool* isOpen)
@@ -227,16 +218,10 @@ void Application::LoadSettings()
         demoWindow->SetEnabled(m_settings.GetBool("Windows", "ShowDemoWindow", true));
     }
 
-    WindowFunction* helloWindow = m_windowManager.GetWindow("Hello World");
-    if (helloWindow)
+    WindowFunction* appWindow = m_windowManager.GetWindow("Application");
+    if (appWindow)
     {
-        helloWindow->SetEnabled(m_settings.GetBool("Windows", "ShowHelloWorld", true));
-    }
-
-    WindowFunction* infoWindow = m_windowManager.GetWindow("Application Info");
-    if (infoWindow)
-    {
-        infoWindow->SetEnabled(m_settings.GetBool("Windows", "ShowAppInfo", true));
+        appWindow->SetEnabled(m_settings.GetBool("Windows", "ShowApplication", true));
     }
 
     WindowFunction* implotWindow = m_windowManager.GetWindow("Plot Demo");
@@ -268,16 +253,10 @@ void Application::SaveSettings()
         m_settings.SetBool("Windows", "ShowDemoWindow", demoWindow->IsEnabled());
     }
 
-    WindowFunction* helloWindow = m_windowManager.GetWindow("Hello World");
-    if (helloWindow)
+    WindowFunction* appWindow = m_windowManager.GetWindow("Application");
+    if (appWindow)
     {
-        m_settings.SetBool("Windows", "ShowHelloWindow", helloWindow->IsEnabled());
-    }
-
-    WindowFunction* infoWindow = m_windowManager.GetWindow("Application Info");
-    if (infoWindow)
-    {
-        m_settings.SetBool("Windows", "ShowAppInfo", infoWindow->IsEnabled());
+        m_settings.SetBool("Windows", "ShowApplication", appWindow->IsEnabled());
     }
 
     WindowFunction* implotWindow = m_windowManager.GetWindow("Plot Demo");
