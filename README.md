@@ -12,6 +12,7 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 - ✅ **Precompiled Headers** - Fast incremental builds
 - ✅ **Settings Management** - INI file persistence system
 - ✅ **Window Manager** - Modular ImGui window architecture
+- ✅ **Main Menu** - Centralized window visibility control
 - ✅ **Self-contained** - No external dependencies to install
 - ✅ **Application Class Architecture** - Clean, extensible design
 - ✅ **Cross-Platform OpenGL** - Smooth rendering across Windows, macOS, and Linux
@@ -119,12 +120,19 @@ You should see a window with:
 - ✅ Button interactions
 - ✅ Window management
 - ✅ FPS monitoring
+- ✅ **Main Menu** - Control all windows from one place
 
 ### Window Management System
 The application uses a modular WindowFunction/WindowManager architecture:
 - **WindowFunction** - Encapsulates ImGui window rendering logic
 - **WindowManager** - Manages a collection of windows
+- **Main Menu** - Central hub for controlling all windows
+  - Shows all available windows
+  - Toggle checkboxes to show/hide any window
+  - Focus button to bring already-open windows to the front
+  - Always visible by default for easy access
 - **Current Windows**:
+  - Main Menu - Central window control panel
   - Demo Window - ImGui's comprehensive widget showcase
   - Hello World - Main control panel
   - Application Info - Framework and performance details
@@ -302,6 +310,39 @@ if (m_settings.KeyExists("Windows", "MyWindowData"))
 m_settings.SetString("Windows", "MyWindowData", "your_data");
 ```
 
+## Using the Main Menu
+
+The **Main Menu** window provides centralized control over all application windows:
+
+### Features
+- **Window List** - Shows all available windows
+- **Toggle Controls** - Checkboxes to enable/disable each window
+- **Focus Button** - Brings an already-open window to the front
+- **Always Available** - Main Menu is always visible by default
+
+### Window Recovery
+If you accidentally close a window and can't find it:
+1. The **Main Menu** is always visible by default
+2. Find the window name in the Main Menu
+3. Check the checkbox to show the window again
+
+### User Experience Flow
+```
+1. Application starts → Main Menu visible
+2. User opens/closes windows via Main Menu toggles
+3. Each window has a unique checkbox + Focus button
+4. Already-open windows show a "Focus" button to bring to front
+5. Window state automatically saved on application exit
+6. On next launch, windows appear in the same state
+```
+
+### Extending with New Windows
+When you add new windows (following the pattern in "Extending the Application" section), they automatically:
+- Appear in the Main Menu
+- Get toggle checkboxes for visibility control
+- Get a Focus button if already open
+- Have their visibility persisted in settings
+
 ## Build Configuration
 
 ### Change OpenGL Version
@@ -452,6 +493,13 @@ For issues or questions:
 5. Open an issue on GitHub
 
 ## Recent Updates
+
+### Version 1.4
+- ✅ Added Main Menu window - Central hub for window visibility control
+- ✅ Toggle all windows on/off from the Main Menu
+- ✅ Focus button to bring already-open windows to the front
+- ✅ Main menu visibility persisted in settings
+- ✅ Always visible by default for easy window recovery
 
 ### Version 1.3.1
 - ✅ Refactored ImGui window rendering into separate member functions
