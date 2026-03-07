@@ -5,8 +5,11 @@ Application::Application()
     : m_window(nullptr),
       m_clearColor(0.45f, 0.55f, 0.60f, 1.00f),
       m_showMainMenu(true),
-      m_settings("settings.ini")
+      m_settings("settings.ini"),
+      m_isLoadingRequest(false)
 {
+    memset(m_urlBuffer, 0, URL_BUFFER_SIZE);
+    strcpy_s(m_urlBuffer, URL_BUFFER_SIZE, "https://api.github.com");
 }
 
 Application::~Application()
@@ -135,6 +138,10 @@ void Application::SetupWindows()
     // Setup ImPlot demo window
     m_windowManager.AddWindow("Panels", "Plotting", "Plot Demo", 
         [this](bool* isOpen) { RenderImPlotDemoWindow(isOpen); });
+
+    // Setup URL request window
+    m_windowManager.AddWindow("Tools", "Network", "URL Request", 
+        [this](bool* isOpen) { RenderURLRequestWindow(isOpen); });
 }
 
 void Application::RenderMainMenu(bool* isOpen)
@@ -263,6 +270,105 @@ void Application::RenderApplicationInfoWindow(bool* isOpen)
 void Application::RenderImPlotDemoWindow(bool* isOpen)
 {
     ImPlot::ShowDemoWindow(isOpen);
+}
+
+// Callback for CURL to write response data
+static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp)
+{
+    userp->append((char*)contents, size * nmemb);
+    return size * nmemb;
+}
+
+void Application::RenderURLRequestWindow(bool* isOpen)
+{
+    ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("URL Request", isOpen))
+    {
+        ImGui::Text("HTTP Request Tool");
+        ImGui::Separator();
+
+        // URL input
+        ImGui::Text("URL:");
+        ImGui::InputText("##url_input", m_urlBuffer, URL_BUFFER_SIZE);
+
+        ImGui::SameLine();
+
+        // Send button
+        if (ImGui::Button("Send Request") && !m_isLoadingRequest)
+        {
+            m_isLoadingRequest = true;
+            m_responseBuffer.clear();
+            m_requestError.clear();
+
+            // Perform HTTP request
+            CURL* curl = curl_easy_init();
+            if (curl)
+            {
+                curl_easy_setopt(curl, CURLOPT_URL, m_urlBuffer);
+                curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+                curl_easy_setopt(curl, CURLOPT_WRITEDATA, &m_responseBuffer);
+                curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
+                curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+                CURLcode res = curl_easy_perform(curl);
+
+                if (res != CURLE_OK)
+                {
+                    m_requestError = std::string("Error: ") + curl_easy_strerror(res);
+                }
+
+                curl_easy_cleanup(curl);
+            }
+            else
+            {
+                m_requestError = "Failed to initialize CURL";
+            }
+
+            m_isLoadingRequest = false;
+        }
+
+        ImGui::Separator();
+
+        // Status
+        if (m_isLoadingRequest)
+        {
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Loading...");
+        }
+        else if (!m_requestError.empty())
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%s", m_requestError.c_str());
+        }
+        else if (!m_responseBuffer.empty())
+        {
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Success! Response: %zu bytes", m_responseBuffer.size());
+        }
+
+        ImGui::Separator();
+        ImGui::Text("Response:");
+
+        // Response display with scrollbar
+        ImGui::BeginChild("response_scroll", ImVec2(0, -50), true, ImGuiWindowFlags_HorizontalScrollbar);
+        ImGui::TextUnformatted(m_responseBuffer.c_str(), m_responseBuffer.c_str() + m_responseBuffer.size());
+        ImGui::EndChild();
+
+        // Copy button
+        if (!m_responseBuffer.empty())
+        {
+            if (ImGui::Button("Copy Response"))
+            {
+                ImGui::SetClipboardText(m_responseBuffer.c_str());
+            }
+            ImGui::SameLine();
+        }
+
+        if (ImGui::Button("Clear"))
+        {
+            m_responseBuffer.clear();
+            m_requestError.clear();
+        }
+
+        ImGui::End();
+    }
 }
 
 void Application::Shutdown()

@@ -38,8 +38,15 @@ FetchContent_Declare(
     GIT_TAG v0.16
 )
 
+# CURL
+FetchContent_Declare(
+    curl
+    GIT_REPOSITORY https://github.com/curl/curl.git
+    GIT_TAG curl-8_5_0
+)
+
 # Make dependencies available
-FetchContent_MakeAvailable(imgui glfw implot)
+FetchContent_MakeAvailable(imgui glfw implot curl)
 
 # Find OpenGL
 find_package(OpenGL REQUIRED)
@@ -71,6 +78,7 @@ target_include_directories(ImGuiApp PRIVATE
     ${imgui_SOURCE_DIR}/backends
     ${glfw_SOURCE_DIR}/include
     ${implot_SOURCE_DIR}
+    ${curl_SOURCE_DIR}/include
 )
 
 # Enable precompiled headers
@@ -85,16 +93,19 @@ if(WIN32)
         gdi32
         shell32
         glfw
+        libcurl
     )
 elseif(APPLE)
     target_link_libraries(ImGuiApp PRIVATE
         OpenGL::OpenGL
         glfw
+        libcurl
     )
 else()
     target_link_libraries(ImGuiApp PRIVATE
         OpenGL::OpenGL
         glfw
+        libcurl
     )
 endif()
 

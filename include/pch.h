@@ -36,5 +36,8 @@
 // ImPlot
 #include "implot.h"
 
+// CURL
+#include <curl/curl.h>
+
 // Custom OpenGL function wrappers
 #include "OpenGLFunctions.h"
