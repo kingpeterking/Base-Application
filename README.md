@@ -24,28 +24,59 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 
 ```
 Base-Application/
-├── CMakeLists.txt                  # Build configuration
+├── CMakeLists.txt                      # Build configuration
 ├── include/
-│   ├── Application.h               # Main application class
-│   ├── Settings.h                  # Settings management class
-│   ├── SimpleIni.h                 # INI file parser
-│   ├── WindowFunction.h            # ImGui window wrapper class
-│   ├── WindowManager.h             # Window manager class
-│   ├── OpenGLFunctions.h           # Cross-platform OpenGL function wrappers
-│   └── pch.h                       # Precompiled headers
+│   ├── Application.h                   # Main application class
+│   ├── OpenGLFunctions.h               # Cross-platform OpenGL function wrappers
+│   ├── pch.h                           # Precompiled headers
+│   ├── Tools/
+│   │   ├── Settings.h                  # Settings management class
+│   │   ├── SimpleIni.h                 # INI file parser
+│   │   ├── HTTPClient.h                # HTTP/HTTPS client
+│   │   └── ImPlotClient.h              # ImPlot visualization wrapper
+│   └── WindowFunctions/
+│       ├── WindowFunction.h            # ImGui window wrapper class
+│       ├── WindowManager.h             # Window manager class
+│       └── WindowFunctions.h           # Window rendering orchestrator
 ├── src/
-│   ├── main.cpp                    # Entry point
-│   ├── Application.cpp             # Application implementation
-│   ├── Settings.cpp                # Settings implementation
-│   ├── WindowFunction.cpp          # Window function implementation
-│   ├── WindowManager.cpp           # Window manager implementation
-│   └── pch.cpp                     # PCH source file
-├── .gitignore                      # Git ignore rules
-├── README.md                       # This file
-├── SETTINGS_GUIDE.md               # Settings usage documentation
-├── WINDOW_MANAGER_GUIDE.md         # Window management documentation
-└── IMPLEMENTATION_SUMMARY.md       # Implementation details
+│   ├── main.cpp                        # Entry point
+│   ├── Application.cpp                 # Application implementation
+│   ├── pch.cpp                         # PCH source file
+│   ├── Tools/
+│   │   ├── Settings.cpp                # Settings implementation
+│   │   ├── HTTPClient.cpp              # HTTP client implementation
+│   │   └── ImPlotClient.cpp            # ImPlot wrapper implementation
+│   └── WindowFunctions/
+│       ├── WindowFunction.cpp          # Window function implementation
+│       ├── WindowManager.cpp           # Window manager implementation
+│       └── WindowFunctions.cpp         # Window rendering implementations
+├── .gitignore                          # Git ignore rules
+├── README.md                           # This file
+├── SETTINGS_GUIDE.md                   # Settings usage documentation
+├── WINDOW_MANAGER_GUIDE.md             # Window management documentation
+└── IMPLEMENTATION_SUMMARY.md           # Implementation details
 ```
+
+## Architecture
+
+The project is organized into three main areas:
+
+### **Core Application** (`Application.h/cpp`)
+- Handles application lifecycle (initialization, main loop, shutdown)
+- Manages OpenGL context and GLFW window
+- Orchestrates ImGui frame rendering
+- Delegates window rendering to WindowFunctions
+
+### **Tools** (`include/Tools/`, `src/Tools/`)
+- **HTTPClient** - Network request handling via libcurl
+- **ImPlotClient** - Data visualization wrapper
+- **Settings** - Configuration persistence via INI files
+- **SimpleIni** - Lightweight INI file parser
+
+### **WindowFunctions** (`include/WindowFunctions/`, `src/WindowFunctions/`)
+- **WindowFunction** - Encapsulates individual ImGui windows
+- **WindowManager** - Manages collection of windows with type-based grouping
+- **WindowFunctions** - Renders all window UI implementations
 
 ## Prerequisites
 
@@ -196,26 +227,20 @@ See `SETTINGS_GUIDE.md` for:
 
 ## Extending the Application
 
-### Modular Window System - Refactored Pattern
+### Modular Window System
 
-The application uses a clean, scalable window architecture with extracted rendering functions. This pattern makes it easy to add new windows:
+The application uses a clean, scalable window architecture. All window rendering logic is centralized in `WindowFunctions` folder for better organization:
 
-**Pattern:**
+**How to Add a New Window:**
+
+1. **Add rendering function to `WindowFunctions.h`:**
 ```cpp
-// In Application.h (declare rendering function)
-private:
-    void RenderMyCustomWindow(bool* isOpen);
+void RenderMyCustomWindow(bool* isOpen);
+```
 
-// In Application.cpp (SetupWindows - simple and clean)
-void Application::SetupWindows()
-{
-    // Format: AddWindow(TYPE, MENU_NAME, WINDOW_NAME, RENDER_FUNCTION)
-    m_windowManager.AddWindow("Panels", "MyCategory", "My Custom Window", 
-        [this](bool* isOpen) { RenderMyCustomWindow(isOpen); });
-}
-
-// In Application.cpp (implement rendering function)
-void Application::RenderMyCustomWindow(bool* isOpen)
+2. **Implement in `WindowFunctions.cpp`:**
+```cpp
+void WindowFunctions::RenderMyCustomWindow(bool* isOpen)
 {
     ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("My Custom Window", isOpen))
@@ -227,111 +252,121 @@ void Application::RenderMyCustomWindow(bool* isOpen)
 }
 ```
 
+3. **Register in `Application::SetupWindows()`:**
+```cpp
+// Format: AddWindow(TYPE, MENU_NAME, WINDOW_NAME, RENDER_FUNCTION)
+m_windowManager.AddWindow("Panels", "MyCategory", "My Custom Window", 
+    [this](bool* isOpen) { m_windowFunctions->RenderMyCustomWindow(isOpen); });
+```
+
 **Benefits:**
-- ✅ `SetupWindows()` remains clean and shows all windows at a glance
-- ✅ Each window rendering logic is in its own dedicated function
-- ✅ Easy to find and modify window behavior
-- ✅ Follows the Single Responsibility Principle
-- ✅ Scales well as you add more windows
-- ✅ **Windows automatically grouped by type in the Main Menu**
+- ✅ All window rendering logic in one organized folder
+- ✅ Each window rendering function clearly named
+- ✅ Windows automatically grouped by type in Main Menu
+- ✅ Easy to extend without modifying Application class
+- ✅ Single Responsibility Principle
 
-### Current Window Implementations
+### Built-in Window Examples
 
-The application includes four example windows:
+The application includes five example windows:
 
-**1. RenderDemoWindow()**
+**1. RenderMainMenu()**
+- Central control panel for all windows
+- Hierarchical organization by window type
+- Visibility toggle for each window
+
+**2. RenderDemoWindow()**
 - ImGui's built-in demo window
 - Shows all available ImGui widgets
 
-**2. RenderHelloWorldWindow()**
-- Interactive controls
-- Color picker for background
-- Settings UI example
-- FPS monitoring
+**3. RenderHelloWorldWindow()**
+- Interactive controls (slider, button, color picker)
+- Settings demonstration
+- Real-time FPS monitoring
 
-**3. RenderApplicationInfoWindow()**
+**4. RenderApplicationInfoWindow()**
 - Application metadata display
 - Window count information
-- Framework details
+- Framework and rendering details
 
-**4. RenderImPlotDemoWindow()**
+**5. RenderImPlotDemoWindow()**
 - ImPlot's comprehensive demo window
 - Line plots, scatter plots, and bar charts
-- Heatmaps and digital plots
-- Error bars and stem plots
-- Real-time data streaming examples
-- Interactive axis controls and pan/zoom
-- Demonstrates all ImPlot capabilities
 
-**5. RenderURLRequestWindow()**
+**6. RenderURLRequestWindow()**
 - HTTP/HTTPS request client
-- URL input field with default example
-- Send request button
-- Response display with scrollable area
-- Copy response to clipboard functionality
-- Error handling and status display
-- Integration with libcurl for network operations
+- URL input and response display
+- Copy response to clipboard
+- Real-time request status
 
-### Adding a New Window
+## Tools Architecture
 
-To add a new window, follow these steps:
+The `Tools` folder contains reusable service classes:
 
-1. **Declare in header:**
+### HTTPClient
+- Handles HTTP/HTTPS GET requests via libcurl
+- Supports follow redirects and custom timeouts
+- Thread-safe response buffering
+- Error handling and status reporting
+
+```cpp
+HTTPClient client;
+client.PerformRequest("https://api.example.com");
+if (!client.GetError().empty()) {
+    printf("Error: %s\n", client.GetError().c_str());
+} else {
+    printf("Response: %s\n", client.GetResponse().c_str());
+}
+```
+
+### ImPlotClient
+- Wraps ImPlot functionality
+- Provides professional data visualization
+- Shows comprehensive demo of all plot types
+
+### Settings Manager
+- Persists application state to INI file
+- Type-safe access (string, int, float, bool)
+- Automatic load/save on startup/shutdown
+- Simple key-value storage with section organization
+
+```cpp
+Settings settings("app.ini");
+settings.SetFloat("Display", "Volume", 0.8f);
+float volume = settings.GetFloat("Display", "Volume", 0.5f);
+settings.Save();
+```
+
+## Adding Custom Tools
+
+To add a new tool service:
+
+1. **Create header** in `include/Tools/MyTool.h`:
+```cpp
+class MyTool
+{
+public:
+    MyTool();
+    ~MyTool();
+
+    void DoSomething();
+private:
+    // Your data
+};
+```
+
+2. **Implement** in `src/Tools/MyTool.cpp`:
+```cpp
+// Implementation
+```
+
+3. **Add to Application**:
 ```cpp
 // In include/Application.h
-private:
-    void RenderMyWindow(bool* isOpen);
-```
+std::unique_ptr<MyTool> m_myTool;
 
-2. **Implement rendering:**
-```cpp
-// In src/Application.cpp
-void Application::RenderMyWindow(bool* isOpen)
-{
-    if (ImGui::Begin("My Window", isOpen))
-    {
-        ImGui::Text("Hello from my window!");
-        ImGui::End();
-    }
-}
-```
-
-3. **Register in SetupWindows:**
-```cpp
-// In Application::SetupWindows()
-// Format: AddWindow(TYPE, MENU_NAME, WINDOW_NAME, RENDER_FUNCTION)
-m_windowManager.AddWindow("Panels", "MyCategory", "My Window", 
-    [this](bool* isOpen) { RenderMyWindow(isOpen); });
-```
-
-The window will now appear in the Main Menu under the "Panels" category, with toggle and focus controls.
-
-### Adding Custom UI
-Windows are managed through the WindowManager. Each window is a WindowFunction instance:
-
-```cpp
-// To control a window
-WindowFunction* myWindow = m_windowManager.GetWindow("Window Name");
-if (myWindow) {
-    myWindow->SetEnabled(false);  // Hide
-    myWindow->ToggleEnabled();    // Toggle visibility
-}
-```
-
-### Persisting Window State
-
-Window visibility is automatically saved and restored. To persist additional window data:
-
-```cpp
-// In LoadSettings()
-if (m_settings.KeyExists("Windows", "MyWindowData"))
-{
-    std::string data = m_settings.GetString("Windows", "MyWindowData", "default");
-    // Use data...
-}
-
-// In SaveSettings()
-m_settings.SetString("Windows", "MyWindowData", "your_data");
+// In src/Application.cpp constructor
+m_myTool = std::make_unique<MyTool>();
 ```
 
 ## Using the Main Menu
