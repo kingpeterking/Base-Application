@@ -21,7 +21,7 @@
 #include <GLFW/glfw3.h>
 
 // SimpleIni
-#include "SimpleIni.h"
+#include "Tools/SimpleIni.h"
 
 // Dear ImGui - define math operators before including imgui.h
 #define IMGUI_DEFINE_MATH_OPERATORS

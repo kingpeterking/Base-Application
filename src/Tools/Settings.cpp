@@ -1,5 +1,6 @@
 #include "pch.h"
-#include "Settings.h"
+#include "Tools/Settings.h"
+#include "Tools/SimpleIni.h"
 
 Settings::Settings(const std::string& filePath)
     : m_filePath(filePath)
@@ -84,15 +85,13 @@ float Settings::GetFloat(const std::string& section, const std::string& key, flo
 
 void Settings::SetFloat(const std::string& section, const std::string& key, float value)
 {
-    std::ostringstream oss;
-    oss << std::fixed << std::setprecision(6) << value;
-    SetString(section, key, oss.str());
+    SetString(section, key, std::to_string(value));
 }
 
 bool Settings::GetBool(const std::string& section, const std::string& key, bool defaultValue)
 {
     std::string value = GetString(section, key, defaultValue ? "true" : "false");
-    return (value == "true" || value == "1" || value == "yes");
+    return (value == "true" || value == "1" || value == "yes" || value == "on");
 }
 
 void Settings::SetBool(const std::string& section, const std::string& key, bool value)
@@ -105,7 +104,8 @@ bool Settings::KeyExists(const std::string& section, const std::string& key)
     if (!m_pIni)
         return false;
 
-    return m_pIni->GetValue(section.c_str(), key.c_str()) != nullptr;
+    const char* value = m_pIni->GetValue(section.c_str(), key.c_str(), nullptr);
+    return value != nullptr;
 }
 
 void Settings::DeleteKey(const std::string& section, const std::string& key)

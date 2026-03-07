@@ -1,7 +1,7 @@
 #pragma once
 
 #include "pch.h"
-#include "Settings.h"
+#include "Tools/Settings.h"
 #include "WindowManager.h"
 #include "Tools/HTTPClient.h"
 #include "Tools/ImPlotClient.h"

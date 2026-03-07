@@ -56,7 +56,7 @@ add_executable(ImGuiApp
     src/pch.cpp
     src/main.cpp
     src/Application.cpp
-    src/Settings.cpp
+    src/Tools/Settings.cpp
     src/WindowFunction.cpp
     src/WindowManager.cpp
     src/Tools/HTTPClient.cpp
