@@ -259,50 +259,51 @@ void Application::RenderApplicationInfoWindow(bool* isOpen)
 
 void Application::RenderImPlotDemoWindow(bool* isOpen)
 {
-    ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(900, 700), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Plot Demo", isOpen))
     {
-        ImGui::Text("Simple Plot Visualization");
+        ImGui::Text("ImPlot Data Visualization");
         ImGui::Separator();
 
-        // Draw a simple chart using ImGui's canvas
-        ImVec2 canvas_pos = ImGui::GetCursorScreenPos();
-        ImVec2 canvas_size = ImGui::GetContentRegionAvail();
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
-
-        // Draw background
-        draw_list->AddRectFilled(canvas_pos, ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y), IM_COL32(50, 50, 50, 200));
-
-        // Draw grid and sine wave
-        const int num_points = 100;
-        const float scale_x = canvas_size.x / num_points;
-        const float scale_y = canvas_size.y / 100.0f;
-
-        for (int i = 0; i < num_points - 1; ++i)
+        // Generate sample data
+        static float xs[100], ys1[100], ys2[100];
+        static bool initialized = false;
+        if (!initialized)
         {
-            float y1 = 50.0f + sinf((i) * 3.14f / 25) * 30.0f;
-            float y2 = 50.0f + sinf((i + 1) * 3.14f / 25) * 30.0f;
-
-            ImVec2 p1(canvas_pos.x + i * scale_x, canvas_pos.y + canvas_size.y - y1 * scale_y);
-            ImVec2 p2(canvas_pos.x + (i + 1) * scale_x, canvas_pos.y + canvas_size.y - y2 * scale_y);
-
-            draw_list->AddLine(p1, p2, IM_COL32(0, 200, 100, 200), 2.0f);
+            for (int i = 0; i < 100; ++i)
+            {
+                xs[i] = i * 0.1f;
+                ys1[i] = sinf(xs[i]);
+                ys2[i] = cosf(xs[i]);
+            }
+            initialized = true;
         }
 
-        // Draw axis labels
-        ImGui::SetCursorScreenPos(ImVec2(canvas_pos.x, canvas_pos.y + canvas_size.y + 5));
-        ImGui::Text("X-Axis (theta)");
-        ImGui::SetCursorScreenPos(ImVec2(canvas_pos.x - 30, canvas_pos.y + 5));
-        ImGui::Text("Y-Axis\n(sin)");
+        if (ImPlot::BeginPlot("Trigonometric Functions", ImVec2(-1, 400)))
+        {
+            ImPlot::SetupAxes("X", "Y");
+            ImPlot::SetupAxesLimits(0, 10, -1.5, 1.5);
 
-        ImGui::Dummy(canvas_size);
+            // Plot lines
+            ImPlot::PlotLine("sin(x)", xs, ys1, 100);
+            ImPlot::PlotLine("cos(x)", xs, ys2, 100);
+
+            // Plot markers
+            ImPlot::PlotScatter("sin(x) points", xs, ys1, 100);
+
+            ImPlot::EndPlot();
+        }
+
         ImGui::End();
     }
 }
 
 void Application::Shutdown()
 {
-    // Cleanup
+    // Cleanup ImPlot
+    ImPlot::DestroyContext();
+
+    // Cleanup ImGui
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();

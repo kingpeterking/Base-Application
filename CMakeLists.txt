@@ -21,7 +21,7 @@ set(GLFW_INSTALL OFF CACHE BOOL "Generate installation target for GLFW" FORCE)
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG v1.89.9
+    GIT_TAG v1.91.0
 )
 
 # GLFW
@@ -31,8 +31,15 @@ FetchContent_Declare(
     GIT_TAG 3.3.8
 )
 
+# ImPlot
+FetchContent_Declare(
+    implot
+    GIT_REPOSITORY https://github.com/epezent/implot.git
+    GIT_TAG v0.16
+)
+
 # Make dependencies available
-FetchContent_MakeAvailable(imgui glfw)
+FetchContent_MakeAvailable(imgui glfw implot)
 
 # Find OpenGL
 find_package(OpenGL REQUIRED)
@@ -52,6 +59,8 @@ add_executable(ImGuiApp
     ${imgui_SOURCE_DIR}/imgui_widgets.cpp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+    ${implot_SOURCE_DIR}/implot.cpp
+    ${implot_SOURCE_DIR}/implot_items.cpp
 )
 
 # Include directories
@@ -60,6 +69,7 @@ target_include_directories(ImGuiApp PRIVATE
     ${imgui_SOURCE_DIR}
     ${imgui_SOURCE_DIR}/backends
     ${glfw_SOURCE_DIR}/include
+    ${implot_SOURCE_DIR}
 )
 
 # Enable precompiled headers

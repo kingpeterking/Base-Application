@@ -33,5 +33,8 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
+// ImPlot
+#include "implot.h"
+
 // Custom OpenGL function wrappers
 #include "OpenGLFunctions.h"
