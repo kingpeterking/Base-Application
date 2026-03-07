@@ -99,8 +99,16 @@ void Application::RenderFrame()
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    // Render all window functions
-    m_windowManager.RenderAllWindows();
+    // Render all window functions, with focus on specified window if any
+    if (!m_windowToFocus.empty())
+    {
+        m_windowManager.RenderAllWindowsWithFocus(m_windowToFocus);
+        m_windowToFocus.clear();
+    }
+    else
+    {
+        m_windowManager.RenderAllWindows();
+    }
 
     // Rendering
     ImGui::Render();
@@ -196,13 +204,6 @@ void Application::RenderMainMenu(bool* isOpen)
         ImGui::Text("Total Windows: %zu", allWindows.size() - 1); // -1 for the main menu itself
 
         ImGui::End();
-    }
-
-    // Apply focus to marked window (rendered after menu so it takes effect)
-    if (!m_windowToFocus.empty())
-    {
-        ImGui::SetWindowFocus(m_windowToFocus.c_str());
-        m_windowToFocus.clear();
     }
 }
 

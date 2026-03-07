@@ -39,6 +39,32 @@ void WindowManager::RenderAllWindows()
     }
 }
 
+void WindowManager::RenderAllWindowsWithFocus(const std::string& focusWindowName)
+{
+    // Find the window to focus
+    std::shared_ptr<WindowFunction> focusWindow = nullptr;
+
+    // Render all windows except the focus window
+    for (auto& window : m_windows)
+    {
+        if (window->GetWindowName() == focusWindowName)
+        {
+            focusWindow = window;
+        }
+        else
+        {
+            window->Render();
+        }
+    }
+
+    // Render the focus window last so it appears on top
+    if (focusWindow)
+    {
+        focusWindow->Render();
+        ImGui::SetWindowFocus(focusWindowName.c_str());
+    }
+}
+
 WindowFunction* WindowManager::GetWindow(const std::string& windowName)
 {
     auto it = std::find_if(m_windows.begin(), m_windows.end(),

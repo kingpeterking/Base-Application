@@ -20,6 +20,9 @@ public:
     // Render all enabled windows
     void RenderAllWindows();
 
+    // Render all windows with one window on top (rendered last)
+    void RenderAllWindowsWithFocus(const std::string& focusWindowName);
+
     // Get window by name
     WindowFunction* GetWindow(const std::string& windowName);
 
