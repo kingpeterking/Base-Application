@@ -5,7 +5,6 @@ Application::Application()
     : m_window(nullptr),
       m_clearColor(0.45f, 0.55f, 0.60f, 1.00f),
       m_showMainMenu(true),
-      m_windowToFocus(""),
       m_settings("settings.ini")
 {
 }
@@ -99,16 +98,8 @@ void Application::RenderFrame()
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    // Render all window functions, with focus on specified window if any
-    if (!m_windowToFocus.empty())
-    {
-        m_windowManager.RenderAllWindowsWithFocus(m_windowToFocus);
-        m_windowToFocus.clear();
-    }
-    else
-    {
-        m_windowManager.RenderAllWindows();
-    }
+    // Render all window functions
+    m_windowManager.RenderAllWindows();
 
     // Rendering
     ImGui::Render();
@@ -190,8 +181,8 @@ void Application::RenderMainMenu(bool* isOpen)
                         std::string focusLabel = "Focus##" + windowName;
                         if (ImGui::SmallButton(focusLabel.c_str()))
                         {
-                            // Mark this window to be brought to front
-                            m_windowToFocus = windowName;
+                            // Mark this window to be rendered topmost
+                            m_windowManager.SetWindowTopmost(windowName);
                         }
                     }
                 }
