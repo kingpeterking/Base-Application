@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "WindowFunction.h"
+#include "WindowFunctions/WindowFunction.h"
 
 WindowFunction::WindowFunction()
     : m_type("Uncategorized"),

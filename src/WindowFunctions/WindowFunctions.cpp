@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "WindowFunctions/WindowFunctions.h"
 #include "Application.h"
-#include "WindowManager.h"
+#include "WindowFunctions/WindowManager.h"
 
 WindowFunctions::WindowFunctions(Application* app)
     : m_app(app)

@@ -23,6 +23,9 @@
 // SimpleIni
 #include "Tools/SimpleIni.h"
 
+// WindowFunctions
+#include "WindowFunctions/WindowFunction.h"
+
 // Dear ImGui - define math operators before including imgui.h
 #define IMGUI_DEFINE_MATH_OPERATORS
 

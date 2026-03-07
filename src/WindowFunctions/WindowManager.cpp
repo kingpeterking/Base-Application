@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "WindowManager.h"
+#include "WindowFunctions/WindowManager.h"
 
 WindowManager::WindowManager()
     : m_windows()
