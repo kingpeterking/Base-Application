@@ -129,7 +129,6 @@ The application uses a modular WindowFunction/WindowManager architecture:
 - **Main Menu** - Central hub for controlling all windows
   - Shows all available windows
   - Toggle checkboxes to show/hide any window
-  - Focus button to bring already-open windows to the front
   - Always visible by default for easy access
 - **Current Windows**:
   - Main Menu - Central window control panel
@@ -322,7 +321,6 @@ The **Main Menu** window provides centralized control over all application windo
 - **Collapsible Sections** - Each type has a collapsible header showing all windows of that type
 - **Window List** - Shows all available windows within each category
 - **Toggle Controls** - Checkboxes to enable/disable each window
-- **Focus Button** - Brings an already-open window to the front
 - **Always Available** - Main Menu is always visible by default
 
 ### Window Organization
@@ -331,11 +329,11 @@ The **Main Menu** window provides centralized control over all application windo
 ```
 Main Menu
 ├─ Application (collapsible)
-│  └─ ☑ Main Menu [Focus]
+│  └─ ☑ Main Menu
 ├─ Panels (collapsible)
-│  ├─ ☑ Demo Window [Focus]
-│  ├─ ☑ Hello World [Focus]
-│  └─ ☑ Application Info [Focus]
+│  ├─ ☑ Demo Window
+│  ├─ ☑ Hello World
+│  └─ ☑ Application Info
 ```
 
 ### Window Recovery
@@ -343,7 +341,7 @@ If you accidentally close a window and can't find it:
 1. The **Main Menu** is always visible by default
 2. Find the window's category section
 3. Expand the section if collapsed
-4. Check the checkbox next to the window name
+4. Check the checkbox next to the window name to show it again
 
 ### User Experience Flow
 ```
@@ -531,6 +529,11 @@ For issues or questions:
 5. Open an issue on GitHub
 
 ## Recent Updates
+
+### Version 1.5.1
+- ✅ Removed Focus button (z-order control not fully working with ImGui)
+- ✅ Simplified Main Menu to focus on window visibility control
+- ✅ Clean checkbox interface for showing/hiding windows
 
 ### Version 1.5
 - ✅ Added window type/category system for better organization
