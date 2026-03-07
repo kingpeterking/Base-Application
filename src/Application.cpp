@@ -4,6 +4,7 @@
 Application::Application()
     : m_window(nullptr),
       m_clearColor(0.45f, 0.55f, 0.60f, 1.00f),
+      m_showMainMenu(true),
       m_settings("settings.ini")
 {
 }
@@ -112,6 +113,10 @@ void Application::RenderFrame()
 
 void Application::SetupWindows()
 {
+    // Main menu window (always first for easy access)
+    m_windowManager.AddWindow("Main", "Main Menu", 
+        [this](bool* isOpen) { RenderMainMenu(isOpen); });
+
     // Setup demo window
     m_windowManager.AddWindow("Windows", "Demo Window", 
         [this](bool* isOpen) { RenderDemoWindow(isOpen); });
@@ -123,6 +128,56 @@ void Application::SetupWindows()
     // Setup application info window
     m_windowManager.AddWindow("Windows", "Application Info", 
         [this](bool* isOpen) { RenderApplicationInfoWindow(isOpen); });
+}
+
+void Application::RenderMainMenu(bool* isOpen)
+{
+    ImGui::SetNextWindowSize(ImVec2(400, 500), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin("Main Menu", isOpen, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("Available Windows");
+        ImGui::Separator();
+
+        // Iterate through all windows and display toggle controls
+        const auto& allWindows = m_windowManager.GetAllWindows();
+
+        for (const auto& window : allWindows)
+        {
+            // Skip the main menu itself
+            if (window->GetWindowName() == "Main Menu")
+                continue;
+
+            std::string menuName = window->GetMenuName();
+            std::string windowName = window->GetWindowName();
+            bool isEnabled = window->IsEnabled();
+
+            // Create a unique ID for this checkbox
+            std::string checkboxLabel = windowName + "##window_toggle";
+
+            if (ImGui::Checkbox(checkboxLabel.c_str(), &isEnabled))
+            {
+                window->SetEnabled(isEnabled);
+            }
+
+            // If window is already open, add a "Focus" button next to it
+            if (isEnabled)
+            {
+                ImGui::SameLine();
+                std::string focusLabel = "Focus##" + windowName;
+                if (ImGui::SmallButton(focusLabel.c_str()))
+                {
+                    ImGui::SetWindowFocus(windowName.c_str());
+                }
+            }
+        }
+
+        ImGui::Separator();
+        ImGui::Text("Total Windows: %zu", allWindows.size() - 1); // -1 for the main menu itself
+
+        ImGui::End();
+    }
 }
 
 void Application::RenderDemoWindow(bool* isOpen)
@@ -225,7 +280,16 @@ void Application::LoadSettings()
     float a = m_settings.GetFloat("Display", "ColorA", 1.00f);
     m_clearColor = ImVec4(r, g, b, a);
 
+    // Load main menu visibility
+    m_showMainMenu = m_settings.GetBool("Windows", "ShowMainMenu", true);
+
     // Load window visibility settings
+    WindowFunction* mainMenu = m_windowManager.GetWindow("Main Menu");
+    if (mainMenu)
+    {
+        mainMenu->SetEnabled(m_showMainMenu);
+    }
+
     WindowFunction* demoWindow = m_windowManager.GetWindow("Demo Window");
     if (demoWindow)
     {
@@ -253,6 +317,13 @@ void Application::SaveSettings()
     m_settings.SetFloat("Display", "ColorB", m_clearColor.z);
     m_settings.SetFloat("Display", "ColorA", m_clearColor.w);
 
+    // Save main menu visibility
+    WindowFunction* mainMenu = m_windowManager.GetWindow("Main Menu");
+    if (mainMenu)
+    {
+        m_settings.SetBool("Windows", "ShowMainMenu", mainMenu->IsEnabled());
+    }
+
     // Save window visibility settings
     WindowFunction* demoWindow = m_windowManager.GetWindow("Demo Window");
     if (demoWindow)
@@ -263,7 +334,7 @@ void Application::SaveSettings()
     WindowFunction* helloWindow = m_windowManager.GetWindow("Hello World");
     if (helloWindow)
     {
-        m_settings.SetBool("Windows", "ShowHelloWorld", helloWindow->IsEnabled());
+        m_settings.SetBool("Windows", "ShowHelloWindow", helloWindow->IsEnabled());
     }
 
     WindowFunction* infoWindow = m_windowManager.GetWindow("Application Info");

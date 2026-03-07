@@ -22,12 +22,14 @@ private:
     void SetupWindows();
 
     // Window rendering functions
+    void RenderMainMenu(bool* isOpen);
     void RenderDemoWindow(bool* isOpen);
     void RenderHelloWorldWindow(bool* isOpen);
     void RenderApplicationInfoWindow(bool* isOpen);
 
     GLFWwindow* m_window;
     ImVec4 m_clearColor;
+    bool m_showMainMenu;
 
     // Window management
     WindowManager m_windowManager;
