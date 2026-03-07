@@ -33,13 +33,12 @@ private:
     ImVec4 m_clearColor;
     bool m_showMainMenu;
 
+    // HTTP Client for network requests
+    HTTPClient m_httpClient;
+
     // URL Request state
     static constexpr size_t URL_BUFFER_SIZE = 512;
-    static constexpr size_t RESPONSE_BUFFER_SIZE = 8192;
     char m_urlBuffer[URL_BUFFER_SIZE];
-    std::string m_responseBuffer;
-    bool m_isLoadingRequest;
-    std::string m_requestError;
 
     // Window management
     WindowManager m_windowManager;

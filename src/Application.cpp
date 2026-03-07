@@ -5,8 +5,7 @@ Application::Application()
     : m_window(nullptr),
       m_clearColor(0.45f, 0.55f, 0.60f, 1.00f),
       m_showMainMenu(true),
-      m_settings("settings.ini"),
-      m_isLoadingRequest(false)
+      m_settings("settings.ini")
 {
     memset(m_urlBuffer, 0, URL_BUFFER_SIZE);
     strcpy_s(m_urlBuffer, URL_BUFFER_SIZE, "https://api.github.com");
@@ -272,13 +271,6 @@ void Application::RenderImPlotDemoWindow(bool* isOpen)
     ImPlot::ShowDemoWindow(isOpen);
 }
 
-// Callback for CURL to write response data
-static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp)
-{
-    userp->append((char*)contents, size * nmemb);
-    return size * nmemb;
-}
-
 void Application::RenderURLRequestWindow(bool* isOpen)
 {
     ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
@@ -294,53 +286,25 @@ void Application::RenderURLRequestWindow(bool* isOpen)
         ImGui::SameLine();
 
         // Send button
-        if (ImGui::Button("Send Request") && !m_isLoadingRequest)
+        if (ImGui::Button("Send Request") && !m_httpClient.IsLoading())
         {
-            m_isLoadingRequest = true;
-            m_responseBuffer.clear();
-            m_requestError.clear();
-
-            // Perform HTTP request
-            CURL* curl = curl_easy_init();
-            if (curl)
-            {
-                curl_easy_setopt(curl, CURLOPT_URL, m_urlBuffer);
-                curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-                curl_easy_setopt(curl, CURLOPT_WRITEDATA, &m_responseBuffer);
-                curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
-                curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-
-                CURLcode res = curl_easy_perform(curl);
-
-                if (res != CURLE_OK)
-                {
-                    m_requestError = std::string("Error: ") + curl_easy_strerror(res);
-                }
-
-                curl_easy_cleanup(curl);
-            }
-            else
-            {
-                m_requestError = "Failed to initialize CURL";
-            }
-
-            m_isLoadingRequest = false;
+            m_httpClient.PerformRequest(m_urlBuffer);
         }
 
         ImGui::Separator();
 
         // Status
-        if (m_isLoadingRequest)
+        if (m_httpClient.IsLoading())
         {
             ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Loading...");
         }
-        else if (!m_requestError.empty())
+        else if (!m_httpClient.GetError().empty())
         {
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%s", m_requestError.c_str());
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%s", m_httpClient.GetError().c_str());
         }
-        else if (!m_responseBuffer.empty())
+        else if (!m_httpClient.GetResponse().empty())
         {
-            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Success! Response: %zu bytes", m_responseBuffer.size());
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Success! Response: %zu bytes", m_httpClient.GetResponse().size());
         }
 
         ImGui::Separator();
@@ -348,23 +312,22 @@ void Application::RenderURLRequestWindow(bool* isOpen)
 
         // Response display with scrollbar
         ImGui::BeginChild("response_scroll", ImVec2(0, -50), true, ImGuiWindowFlags_HorizontalScrollbar);
-        ImGui::TextUnformatted(m_responseBuffer.c_str(), m_responseBuffer.c_str() + m_responseBuffer.size());
+        ImGui::TextUnformatted(m_httpClient.GetResponse().c_str(), m_httpClient.GetResponse().c_str() + m_httpClient.GetResponse().size());
         ImGui::EndChild();
 
         // Copy button
-        if (!m_responseBuffer.empty())
+        if (!m_httpClient.GetResponse().empty())
         {
             if (ImGui::Button("Copy Response"))
             {
-                ImGui::SetClipboardText(m_responseBuffer.c_str());
+                ImGui::SetClipboardText(m_httpClient.GetResponse().c_str());
             }
             ImGui::SameLine();
         }
 
         if (ImGui::Button("Clear"))
         {
-            m_responseBuffer.clear();
-            m_requestError.clear();
+            m_httpClient.ClearAll();
         }
 
         ImGui::End();

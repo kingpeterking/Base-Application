@@ -41,3 +41,6 @@
 
 // Custom OpenGL function wrappers
 #include "OpenGLFunctions.h"
+
+// Tools
+#include "Tools/HTTPClient.h"
