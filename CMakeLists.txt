@@ -57,6 +57,8 @@ set(GLFW_INSTALL OFF CACHE BOOL "Generate installation target for GLFW" FORCE)
 set(CURL_ENABLE_SSL ON CACHE BOOL "Enable SSL/TLS support in CURL" FORCE)
 set(BUILD_CURL_EXE OFF CACHE BOOL "Build curl executable" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "Build CURL tests" FORCE)
+set(ENABLE_CURLDEBUG OFF CACHE BOOL "Disable CURL debug" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static library" FORCE)
 
 # Platform-specific SSL/TLS backend configuration
 if(WIN32)
@@ -110,8 +112,15 @@ FetchContent_Declare(
     GIT_TAG curl-8_5_0
 )
 
+# cpp-httplib (HTTP server library)
+FetchContent_Declare(
+    httplib
+    GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+    GIT_TAG v0.15.3
+)
+
 # Make dependencies available
-FetchContent_MakeAvailable(imgui glfw implot curl)
+FetchContent_MakeAvailable(imgui glfw implot curl httplib)
 
 # Find OpenGL
 find_package(OpenGL REQUIRED)
@@ -123,6 +132,7 @@ add_executable(ImGuiApp
     src/Application.cpp
     src/Tools/Settings.cpp
     src/Tools/Logger.cpp
+    src/Tools/Web/WebServer.cpp
     src/WindowFunctions/WindowFunction.cpp
     src/WindowFunctions/WindowManager.cpp
     src/Tools/Web/HTTPClient.cpp
@@ -149,6 +159,7 @@ target_include_directories(ImGuiApp PRIVATE
     ${glfw_SOURCE_DIR}/include
     ${implot_SOURCE_DIR}
     ${curl_SOURCE_DIR}/include
+    ${httplib_SOURCE_DIR}
 )
 
 # Enable precompiled headers

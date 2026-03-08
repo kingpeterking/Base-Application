@@ -14,6 +14,8 @@ public:
     void RenderURLRequestWindow(bool* isOpen);
     void RenderFileExplorerWindow(bool* isOpen);
     void RenderLogViewerWindow(bool* isOpen);
+    void RenderWebServerControlWindow(bool* isOpen);
+    void RenderWebServerRequestsWindow(bool* isOpen);
 
 private:
     class Application* m_app;

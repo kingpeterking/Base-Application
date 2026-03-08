@@ -4,6 +4,7 @@
 #include "Tools/Settings.h"
 #include "WindowFunctions/WindowManager.h"
 #include "Tools/Web/HTTPClient.h"
+#include "Tools/Web/WebServer.h"
 #include "Tools/ImPlotClient.h"
 #include "WindowFunctions/WindowFunctions.h"
 
@@ -32,6 +33,8 @@ private:
     void RenderURLRequestWindow(bool* isOpen);
     void RenderFileExplorerWindow(bool* isOpen);
     void RenderLogViewerWindow(bool* isOpen);
+    void RenderWebServerControlWindow(bool* isOpen);
+    void RenderWebServerRequestsWindow(bool* isOpen);
 
     GLFWwindow* m_window;
     ImVec4 m_clearColor;
@@ -39,6 +42,7 @@ private:
 
     // Tool clients
     HTTPClient m_httpClient;
+    WebServer m_webServer;
     ImPlotClient m_implotClient;
     std::unique_ptr<WindowFunctions> m_windowFunctions;
 

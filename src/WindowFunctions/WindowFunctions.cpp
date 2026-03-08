@@ -919,3 +919,211 @@ void WindowFunctions::RenderLogViewerWindow(bool* isOpen)
         ImGui::End();
     }
 }
+
+void WindowFunctions::RenderWebServerControlWindow(bool* isOpen)
+{
+    ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin("Web Server Control", isOpen))
+    {
+        ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Web Server Configuration");
+        ImGui::Separator();
+
+        // Server status
+        bool isRunning = m_app->m_webServer.IsRunning();
+        if (isRunning)
+        {
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Status: RUNNING");
+        }
+        else
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Status: STOPPED");
+        }
+
+        ImGui::Separator();
+
+        // Port configuration
+        static int port = 8080;
+        ImGui::Text("Server Port:");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(150);
+        if (isRunning)
+        {
+            ImGui::BeginDisabled();
+            ImGui::InputInt("##port", &port);
+            ImGui::EndDisabled();
+            ImGui::SameLine();
+            ImGui::TextDisabled("(Cannot change while running)");
+        }
+        else
+        {
+            ImGui::InputInt("##port", &port);
+            if (port < 1 || port > 65535)
+            {
+                port = std::clamp(port, 1, 65535);
+            }
+        }
+
+        ImGui::Separator();
+
+        // Start/Stop buttons
+        if (isRunning)
+        {
+            if (ImGui::Button("Stop Server", ImVec2(200, 40)))
+            {
+                m_app->m_webServer.Stop();
+                LOG_INFO("Web server stopped by user");
+            }
+        }
+        else
+        {
+            if (ImGui::Button("Start Server", ImVec2(200, 40)))
+            {
+                if (m_app->m_webServer.Start(port))
+                {
+                    LOG_INFO("Web server started on port " + std::to_string(port));
+                }
+                else
+                {
+                    LOG_ERROR("Failed to start web server on port " + std::to_string(port));
+                }
+            }
+        }
+
+        ImGui::Separator();
+
+        // Server information
+        if (isRunning)
+        {
+            ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "Server Information:");
+            ImGui::Text("Listening on: http://0.0.0.0:%d", m_app->m_webServer.GetPort());
+            ImGui::Text("Total requests: %zu", m_app->m_webServer.GetTotalRequestsReceived());
+            ImGui::Text("Queued requests: %zu", m_app->m_webServer.GetRequestCount());
+
+            ImGui::Separator();
+
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Available Endpoints:");
+            ImGui::BulletText("GET  /");
+            ImGui::BulletText("GET  /api/status");
+            ImGui::BulletText("POST /webhook");
+
+            ImGui::Separator();
+
+            ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Test from command line:");
+            ImGui::TextWrapped("curl http://localhost:%d/", m_app->m_webServer.GetPort());
+            ImGui::TextWrapped("curl http://localhost:%d/api/status", m_app->m_webServer.GetPort());
+            ImGui::TextWrapped("curl -X POST -d \"test\" http://localhost:%d/webhook", m_app->m_webServer.GetPort());
+        }
+        else
+        {
+            ImGui::TextDisabled("Server is not running. Click 'Start Server' to begin.");
+        }
+
+        ImGui::End();
+    }
+}
+
+void WindowFunctions::RenderWebServerRequestsWindow(bool* isOpen)
+{
+    ImGui::SetNextWindowSize(ImVec2(1000, 600), ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin("Web Server - Request Monitor", isOpen))
+    {
+        ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "HTTP Request Monitor");
+        ImGui::Separator();
+
+        // Statistics bar
+        size_t totalRequests = m_app->m_webServer.GetTotalRequestsReceived();
+        size_t queuedRequests = m_app->m_webServer.GetRequestCount();
+
+        ImGui::Text("Total Requests: %zu", totalRequests);
+        ImGui::SameLine(0, 30);
+        ImGui::Text("Queued: %zu", queuedRequests);
+        ImGui::SameLine(0, 30);
+
+        if (ImGui::Button("Clear History"))
+        {
+            m_app->m_webServer.ClearRequests();
+        }
+
+        ImGui::Separator();
+
+        // Request table
+        if (ImGui::BeginTable("requests_table", 6, 
+            ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | 
+            ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY))
+        {
+            ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed, 50);
+            ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 100);
+            ImGui::TableSetupColumn("Method", ImGuiTableColumnFlags_WidthFixed, 80);
+            ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed, 200);
+            ImGui::TableSetupColumn("Client IP", ImGuiTableColumnFlags_WidthFixed, 150);
+            ImGui::TableSetupColumn("Body", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupScrollFreeze(0, 1); // Freeze header row
+            ImGui::TableHeadersRow();
+
+            // Get recent requests
+            auto requests = m_app->m_webServer.GetRecentRequests(100);
+
+            // Render each request (most recent first)
+            for (auto it = requests.rbegin(); it != requests.rend(); ++it)
+            {
+                const auto& req = *it;
+
+                ImGui::TableNextRow();
+
+                // ID
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%d", req.id);
+
+                // Timestamp
+                ImGui::TableSetColumnIndex(1);
+                ImGui::TextUnformatted(req.timestamp.c_str());
+
+                // Method with color
+                ImGui::TableSetColumnIndex(2);
+                ImVec4 methodColor;
+                if (req.method == "GET")
+                    methodColor = ImVec4(0.4f, 0.8f, 1.0f, 1.0f);  // Blue
+                else if (req.method == "POST")
+                    methodColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);  // Green
+                else if (req.method == "PUT")
+                    methodColor = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);  // Yellow
+                else if (req.method == "DELETE")
+                    methodColor = ImVec4(1.0f, 0.3f, 0.3f, 1.0f);  // Red
+                else
+                    methodColor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);  // Gray
+
+                ImGui::TextColored(methodColor, "%s", req.method.c_str());
+
+                // Path
+                ImGui::TableSetColumnIndex(3);
+                ImGui::TextUnformatted(req.path.c_str());
+
+                // Client IP
+                ImGui::TableSetColumnIndex(4);
+                ImGui::TextUnformatted(req.remoteAddr.c_str());
+
+                // Body (truncated if too long)
+                ImGui::TableSetColumnIndex(5);
+                if (!req.body.empty())
+                {
+                    std::string displayBody = req.body;
+                    if (displayBody.length() > 100)
+                    {
+                        displayBody = displayBody.substr(0, 100) + "...";
+                    }
+                    ImGui::TextWrapped("%s", displayBody.c_str());
+                }
+                else
+                {
+                    ImGui::TextDisabled("(empty)");
+                }
+            }
+
+            ImGui::EndTable();
+        }
+
+        ImGui::End();
+    }
+}

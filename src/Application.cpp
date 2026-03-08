@@ -170,6 +170,14 @@ void Application::SetupWindows()
     // Setup log viewer window
     m_windowManager.AddWindow("Tools", "Debug", "Log Viewer", 
         [this](bool* isOpen) { RenderLogViewerWindow(isOpen); });
+
+    // Setup web server control window
+    m_windowManager.AddWindow("Tools", "Web Server", "Server Control", 
+        [this](bool* isOpen) { RenderWebServerControlWindow(isOpen); });
+
+    // Setup web server requests window
+    m_windowManager.AddWindow("Tools", "Web Server", "Request Monitor", 
+        [this](bool* isOpen) { RenderWebServerRequestsWindow(isOpen); });
 }
 
 // Window rendering delegations to WindowFunctions
@@ -208,8 +216,25 @@ void Application::RenderLogViewerWindow(bool* isOpen)
     m_windowFunctions->RenderLogViewerWindow(isOpen);
 }
 
+void Application::RenderWebServerControlWindow(bool* isOpen)
+{
+    m_windowFunctions->RenderWebServerControlWindow(isOpen);
+}
+
+void Application::RenderWebServerRequestsWindow(bool* isOpen)
+{
+    m_windowFunctions->RenderWebServerRequestsWindow(isOpen);
+}
+
 void Application::Shutdown()
 {
+    // Stop web server if running
+    if (m_webServer.IsRunning())
+    {
+        LOG_INFO("Shutting down web server...");
+        m_webServer.Stop();
+    }
+
     // Cleanup ImPlot
     ImPlot::DestroyContext();
 
