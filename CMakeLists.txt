@@ -9,25 +9,31 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build (Debug or Release)" FORCE)
 endif()
 
-# Build-specific compiler flags
+# MSVC Runtime Library Configuration
 if(MSVC)
-    # Visual Studio specific flags
+    # Use dynamic runtime library for both Debug and Release
+    # This prevents linker issues with runtime symbols
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:Debug>")
+
+    # Set warning level and optimization flags
+    add_compile_options(/W4 /EHsc)
+
     if(CMAKE_BUILD_TYPE MATCHES Debug)
-        # Debug: Include debug info, no optimization, runtime checks
-        set(CMAKE_CXX_FLAGS_DEBUG "/W4 /ZI /Od /RTC1" CACHE STRING "")
+        # Debug: No optimization, full debugging, runtime checks
+        add_compile_options(/Od /RTC1 /ZI)
         message(STATUS "Building DEBUG configuration with full debugging support")
     else()
         # Release: Optimization, minimal debug info
-        set(CMAKE_CXX_FLAGS_RELEASE "/W4 /O2 /Zi" CACHE STRING "")
+        add_compile_options(/O2 /Zi)
         message(STATUS "Building RELEASE configuration with optimizations")
     endif()
 else()
     # GCC/Clang flags
     if(CMAKE_BUILD_TYPE MATCHES Debug)
-        set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra" CACHE STRING "")
+        add_compile_options(-g -O0 -Wall -Wextra)
         message(STATUS "Building DEBUG configuration with full debugging support")
     else()
-        set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -Wall -Wextra" CACHE STRING "")
+        add_compile_options(-O3 -DNDEBUG -Wall -Wextra)
         message(STATUS "Building RELEASE configuration with optimizations")
     endif()
 endif()
