@@ -1,5 +1,7 @@
 # Base Application - Dear ImGui CMake Project
 
+**Version 2.0**
+
 A modern, distributable C++ application template using **Dear ImGui** for the UI framework and **CMake** for cross-platform builds.
 
 ## Features
@@ -713,23 +715,20 @@ For issues or questions:
 
 ## Recent Updates
 
-### Version 1.11.2
-- ✅ Added Debug and Release build configurations
+### Version 2.0 - Major Release 🎉
+- ✅ **Professional Build System** - Complete Debug and Release configurations
   - **Debug**: Full debugging symbols, runtime checks, no optimization (development)
   - **Release**: Optimized code, minimal debug info (production deployment)
   - Separate output directories for each configuration: `bin/Debug/` and `bin/Release/`
   - Automatic binary size/performance optimization in Release mode
-- ✅ Compiler-specific optimization settings
+- ✅ **Compiler-specific optimization settings**
   - **Windows (MSVC)**: `/Od` for Debug, `/O2` for Release
   - **Linux/macOS (GCC/Clang)**: `-O0` for Debug, `-O3` for Release
-- ✅ New BUILD_GUIDE.md documentation
-  - Complete guide to build configurations
+- ✅ **Enhanced Documentation**
+  - New BUILD_GUIDE.md with comprehensive build configuration guide
   - Performance comparison (Debug vs Release)
-  - Command-line building examples
-- ✅ Updated README with build instructions
-  - Separate commands for Debug and Release builds
-  - Updated output directory structure
   - Cross-platform build examples
+  - Updated README with detailed build instructions
 
 ### Version 1.11.1
 - ✅ Fixed HTTPS/SSL support for CURL
