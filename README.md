@@ -143,31 +143,60 @@ cd Base-Application
 mkdir build
 cd build
 cmake ..
-cmake --build . --config Debug
+cmake --build . --config Debug     # For Debug build
+cmake --build . --config Release   # For Release (optimized) build
 ```
 
 #### macOS / Linux
+
+**Debug Build:**
 ```sh
 mkdir build
 cd build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+cmake --build .
+```
+
+**Release Build:**
+```sh
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
 
 ### Output
 The executable will be located at:
-- **Windows**: `build/Debug/ImGuiApp.exe`
-- **macOS/Linux**: `build/ImGuiApp`
+- **Windows Debug**: `build/bin/Debug/ImGuiApp.exe`
+- **Windows Release**: `build/bin/Release/ImGuiApp.exe`
+- **macOS/Linux Debug**: `build/bin/Debug/ImGuiApp`
+- **macOS/Linux Release**: `build/bin/Release/ImGuiApp`
+
+### Build Configurations
+- **Debug**: Full debugging symbols, no optimization (development)
+- **Release**: Optimized code, minimal debug info (production)
+
+For detailed build configuration options, see [BUILD_GUIDE.md](BUILD_GUIDE.md)
 
 ## Running the Application
 
 ### Windows
 ```sh
-.\build\Debug\ImGuiApp.exe
+# Debug version
+.\build\bin\Debug\ImGuiApp.exe
+
+# Release version (optimized)
+.\build\bin\Release\ImGuiApp.exe
 ```
 
 ### macOS / Linux
 ```sh
+# Debug version
+./build/bin/Debug/ImGuiApp
+
+# Release version (optimized)
+./build/bin/Release/ImGuiApp
+```
 ./build/ImGuiApp
 ```
 
@@ -584,6 +613,16 @@ The application uses a custom OpenGL function wrapper (`include/WindowFunctions/
 
 These functions are automatically initialized in `Application::Initialize()` after creating the OpenGL context.
 
+## Documentation
+
+Comprehensive documentation is available in the following guides:
+
+- **[BUILD_GUIDE.md](BUILD_GUIDE.md)** - Debug and Release build configurations, compiler options, performance tuning
+- **[SETTINGS_GUIDE.md](SETTINGS_GUIDE.md)** - Settings management and INI file usage
+- **[WINDOW_MANAGER_GUIDE.md](WINDOW_MANAGER_GUIDE.md)** - Window system architecture and usage
+- **[FILESYSTEM_GUIDE.md](FILESYSTEM_GUIDE.md)** - File system API and File Explorer usage
+- **[FILESYSTEM_IMPLEMENTATION.md](FILESYSTEM_IMPLEMENTATION.md)** - Technical implementation details
+
 ## Troubleshooting
 
 ### Build Errors
@@ -591,6 +630,7 @@ If you encounter build errors:
 1. Delete the `build/` directory
 2. Run CMake again: `cmake ..`
 3. Rebuild: `cmake --build .`
+4. See [BUILD_GUIDE.md](BUILD_GUIDE.md) for configuration details
 
 ### OpenGL Errors
 If you get OpenGL context errors:
@@ -672,6 +712,24 @@ For issues or questions:
 6. Open an issue on GitHub
 
 ## Recent Updates
+
+### Version 1.11.2
+- ✅ Added Debug and Release build configurations
+  - **Debug**: Full debugging symbols, runtime checks, no optimization (development)
+  - **Release**: Optimized code, minimal debug info (production deployment)
+  - Separate output directories for each configuration: `bin/Debug/` and `bin/Release/`
+  - Automatic binary size/performance optimization in Release mode
+- ✅ Compiler-specific optimization settings
+  - **Windows (MSVC)**: `/Od` for Debug, `/O2` for Release
+  - **Linux/macOS (GCC/Clang)**: `-O0` for Debug, `-O3` for Release
+- ✅ New BUILD_GUIDE.md documentation
+  - Complete guide to build configurations
+  - Performance comparison (Debug vs Release)
+  - Command-line building examples
+- ✅ Updated README with build instructions
+  - Separate commands for Debug and Release builds
+  - Updated output directory structure
+  - Cross-platform build examples
 
 ### Version 1.11.1
 - ✅ Fixed HTTPS/SSL support for CURL
