@@ -129,6 +129,7 @@ The project is organized into three main areas:
 - **CMake 3.14+**
 - **Git**
 - **X11 development libraries** (for GLFW window creation)
+- **OpenSSL development libraries** (for HTTPS support)
 
 ## Building
 
@@ -136,6 +137,30 @@ The project is organized into three main areas:
 ```sh
 git clone https://github.com/kingpeterking/Base-Application.git
 cd Base-Application
+```
+
+### Install Dependencies
+
+#### Debian/Ubuntu Linux
+```sh
+sudo apt update
+sudo apt install build-essential cmake git
+sudo apt install libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+sudo apt install libgl1-mesa-dev libssl-dev
+```
+
+#### Fedora/Red Hat Linux
+```sh
+sudo dnf install gcc-c++ cmake git
+sudo dnf install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
+sudo dnf install mesa-libGL-devel openssl-devel
+```
+
+#### Arch Linux
+```sh
+sudo pacman -S base-devel cmake git
+sudo pacman -S libx11 libxrandr libxinerama libxcursor libxi
+sudo pacman -S mesa openssl
 ```
 
 ### Configure and Build
@@ -652,9 +677,15 @@ If you get OpenGL context errors:
 ## Cross-Platform Support
 
 This project builds and runs on:
-- ✅ Windows (7, 8, 10, 11)
-- ✅ macOS (Intel and Apple Silicon)
-- ✅ Linux (Ubuntu, Fedora, etc.)
+- ✅ **Windows** (7, 8, 10, 11) - Uses native SChannel for HTTPS
+- ✅ **macOS** (Intel and Apple Silicon) - Uses native Secure Transport for HTTPS
+- ✅ **Linux** (Debian, Ubuntu, Fedora, Arch, etc.) - Uses OpenSSL for HTTPS
+
+### SSL/TLS Backend
+The application automatically uses the native SSL/TLS backend for each platform:
+- **Windows**: SChannel (built-in, no external dependencies)
+- **macOS**: Secure Transport (built-in, no external dependencies)
+- **Linux**: OpenSSL (requires `libssl-dev` package)
 
 ## Project Organization
 
@@ -724,10 +755,17 @@ For issues or questions:
 - ✅ **Compiler-specific optimization settings**
   - **Windows (MSVC)**: `/Od` for Debug, `/O2` for Release
   - **Linux/macOS (GCC/Clang)**: `-O0` for Debug, `-O3` for Release
+- ✅ **Cross-Platform SSL/TLS Support**
+  - **Windows**: Native SChannel (no external dependencies)
+  - **macOS**: Native Secure Transport (no external dependencies)
+  - **Linux/Debian/Unix**: OpenSSL support
+  - Automatic platform detection in CMake
+  - Full HTTPS support across all platforms
 - ✅ **Enhanced Documentation**
   - New BUILD_GUIDE.md with comprehensive build configuration guide
   - Performance comparison (Debug vs Release)
   - Cross-platform build examples
+  - Linux/Debian installation instructions
   - Updated README with detailed build instructions
 
 ### Version 1.11.1

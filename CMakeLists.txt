@@ -55,11 +55,29 @@ set(GLFW_INSTALL OFF CACHE BOOL "Generate installation target for GLFW" FORCE)
 
 # CURL configuration (set before FetchContent_Declare) - Enable SSL/TLS support
 set(CURL_ENABLE_SSL ON CACHE BOOL "Enable SSL/TLS support in CURL" FORCE)
-# Use Windows native SChannel instead of OpenSSL
-set(CURL_USE_SCHANNEL ON CACHE BOOL "Use Windows native SChannel for SSL/TLS" FORCE)
-set(CURL_USE_OPENSSL OFF CACHE BOOL "Disable OpenSSL" FORCE)
 set(BUILD_CURL_EXE OFF CACHE BOOL "Build curl executable" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "Build CURL tests" FORCE)
+
+# Platform-specific SSL/TLS backend configuration
+if(WIN32)
+    # Windows: Use native SChannel (no external dependencies)
+    set(CURL_USE_SCHANNEL ON CACHE BOOL "Use Windows native SChannel for SSL/TLS" FORCE)
+    set(CURL_USE_OPENSSL OFF CACHE BOOL "Disable OpenSSL on Windows" FORCE)
+    set(CURL_USE_SECTRANSP OFF CACHE BOOL "Disable Secure Transport on Windows" FORCE)
+    message(STATUS "CURL SSL/TLS: Using Windows native SChannel")
+elseif(APPLE)
+    # macOS: Use native Secure Transport (no external dependencies)
+    set(CURL_USE_SECTRANSP ON CACHE BOOL "Use macOS native Secure Transport for SSL/TLS" FORCE)
+    set(CURL_USE_OPENSSL OFF CACHE BOOL "Disable OpenSSL on macOS" FORCE)
+    set(CURL_USE_SCHANNEL OFF CACHE BOOL "Disable SChannel on macOS" FORCE)
+    message(STATUS "CURL SSL/TLS: Using macOS native Secure Transport")
+else()
+    # Linux/Unix (including Debian): Use OpenSSL
+    set(CURL_USE_OPENSSL ON CACHE BOOL "Use OpenSSL for SSL/TLS on Linux" FORCE)
+    set(CURL_USE_SCHANNEL OFF CACHE BOOL "Disable SChannel on Linux" FORCE)
+    set(CURL_USE_SECTRANSP OFF CACHE BOOL "Disable Secure Transport on Linux" FORCE)
+    message(STATUS "CURL SSL/TLS: Using OpenSSL (ensure libssl-dev is installed)")
+endif()
 
 # SimpleIni - header-only library from Brodie Thiesfield
 # We'll create local SimpleIni headers
