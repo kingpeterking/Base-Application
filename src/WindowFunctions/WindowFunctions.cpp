@@ -20,6 +20,14 @@ void WindowFunctions::RenderMainMenu(bool* isOpen)
 
     if (ImGui::Begin("Main Menu", isOpen, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        // Build configuration indicator
+        #ifdef _DEBUG
+            ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Build: DEBUG");
+        #else
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Build: RELEASE");
+        #endif
+        ImGui::Separator();
+
         ImGui::Text("Available Windows");
         ImGui::Separator();
 
@@ -85,6 +93,14 @@ void WindowFunctions::RenderApplicationWindow(bool* isOpen)
         // Application Info Section
         ImGui::Text("Dear ImGui Application");
         ImGui::Separator();
+
+        // Build configuration
+        #ifdef _DEBUG
+            ImGui::Text("Configuration: DEBUG");
+        #else
+            ImGui::Text("Configuration: RELEASE");
+        #endif
+
         ImGui::Text("Windows Managed: %zu", m_app->m_windowManager.GetWindowCount());
         ImGui::Text("Framework: Dear ImGui");
         ImGui::Text("Rendering: OpenGL 3.2");
