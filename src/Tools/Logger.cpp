@@ -83,9 +83,8 @@ std::vector<LogEntry> Logger::GetFilteredLogs(bool showInfo, bool showWarning, b
             case LogLevel::Debug:   includeLevelCheck = showDebug; break;
         }
 
-        // Check source (if empty, show all; otherwise check if source is enabled)
-        bool includeSourceCheck = enabledSources.empty() || 
-                                   enabledSources.find(entry.source) != enabledSources.end();
+        // Check source - only include if source is in the enabled list
+        bool includeSourceCheck = enabledSources.find(entry.source) != enabledSources.end();
 
         if (includeLevelCheck && includeSourceCheck)
         {
