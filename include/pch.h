@@ -48,7 +48,7 @@
 #include "WindowFunctions/OpenGLFunctions.h"
 
 // Tools
-#include "Tools/HTTPClient.h"
+#include "Tools/Web/HTTPClient.h"
 #include "Tools/ImPlotClient.h"
 #include "Tools/FileSystem.h"
 

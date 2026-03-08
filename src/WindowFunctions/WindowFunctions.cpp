@@ -2,7 +2,7 @@
 #include "WindowFunctions/WindowFunctions.h"
 #include "Application.h"
 #include "WindowFunctions/WindowManager.h"
-#include "Tools/HTTPClient.h"
+#include "Tools/Web/HTTPClient.h"
 
 WindowFunctions::WindowFunctions(Application* app)
     : m_app(app)

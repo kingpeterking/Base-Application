@@ -59,7 +59,7 @@ add_executable(ImGuiApp
     src/Tools/Settings.cpp
     src/WindowFunctions/WindowFunction.cpp
     src/WindowFunctions/WindowManager.cpp
-    src/Tools/HTTPClient.cpp
+    src/Tools/Web/HTTPClient.cpp
     src/Tools/ImPlotClient.cpp
     src/Tools/FileSystem.cpp
     src/WindowFunctions/WindowFunctions.cpp

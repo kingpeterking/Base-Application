@@ -3,7 +3,7 @@
 #include "pch.h"
 #include "Tools/Settings.h"
 #include "WindowFunctions/WindowManager.h"
-#include "Tools/HTTPClient.h"
+#include "Tools/Web/HTTPClient.h"
 #include "Tools/ImPlotClient.h"
 #include "WindowFunctions/WindowFunctions.h"
 
