@@ -210,6 +210,13 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
     static int currentDriveIndex = 0;
     static bool needsRefresh = true;
 
+    // Favorites system
+    static std::vector<std::string> favoriteDirectories;
+    static int selectedFavoriteIndex = -1;
+    static bool favoritesLoaded = false;
+    static std::string deletedFavoriteMessage;
+    static float deletedFavoriteMessageTime = 0.0f;
+
     ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("File Explorer", isOpen))
     {
@@ -228,7 +235,160 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
             needsRefresh = false;
         }
 
-        // Drive selector (Windows/macOS/Linux)
+        // Load favorites on first run
+        if (!favoritesLoaded)
+        {
+            std::string favoritesStr = m_app->m_settings.GetString("FileExplorer", "Favorites", "");
+            favoriteDirectories.clear();
+
+            if (!favoritesStr.empty())
+            {
+                // Parse semicolon-separated list
+                size_t start = 0;
+                size_t end = favoritesStr.find(';');
+                while (end != std::string::npos)
+                {
+                    std::string favorite = favoritesStr.substr(start, end - start);
+                    if (!favorite.empty() && FileSystem::DirectoryExists(favorite))
+                    {
+                        favoriteDirectories.push_back(favorite);
+                    }
+                    start = end + 1;
+                    end = favoritesStr.find(';', start);
+                }
+                // Add last favorite
+                std::string favorite = favoritesStr.substr(start);
+                if (!favorite.empty() && FileSystem::DirectoryExists(favorite))
+                {
+                    favoriteDirectories.push_back(favorite);
+                }
+            }
+            favoritesLoaded = true;
+        }
+
+        // Display deleted favorite message with fade-out
+        if (deletedFavoriteMessageTime > 0.0f)
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, deletedFavoriteMessageTime), 
+                "%s", deletedFavoriteMessage.c_str());
+            deletedFavoriteMessageTime -= ImGui::GetIO().DeltaTime;
+        }
+
+        // Summary Statistics at TOP (moved from bottom)
+        ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), 
+            "Files: %zu | Directories: %zu | Total Size: %.2f KB", 
+            fileList.size(), directoryList.size(), 
+            std::accumulate(fileList.begin(), fileList.end(), 0.0,
+                [](double sum, const FileInfo& f) { return sum + f.sizeBytes; }) / 1024.0);
+
+        ImGui::Separator();
+
+        // Favorites section
+        ImGui::Text("Favorites:");
+        ImGui::SameLine();
+
+        // Validate and clean up deleted favorites
+        std::vector<std::string> validFavorites;
+        for (const auto& fav : favoriteDirectories)
+        {
+            if (FileSystem::DirectoryExists(fav))
+            {
+                validFavorites.push_back(fav);
+            }
+            else
+            {
+                // Show error message for this deleted favorite
+                deletedFavoriteMessage = "Favorite directory deleted: " + fav;
+                deletedFavoriteMessageTime = 3.0f;
+            }
+        }
+        favoriteDirectories = validFavorites;
+
+        // Favorites dropdown
+        if (!favoriteDirectories.empty())
+        {
+            if (ImGui::BeginCombo("##favorites_selector", 
+                selectedFavoriteIndex >= 0 && selectedFavoriteIndex < (int)favoriteDirectories.size() 
+                    ? favoriteDirectories[selectedFavoriteIndex].c_str() 
+                    : "Select a favorite..."))
+            {
+                for (size_t i = 0; i < favoriteDirectories.size(); ++i)
+                {
+                    bool isSelected = (selectedFavoriteIndex == (int)i);
+                    if (ImGui::Selectable(favoriteDirectories[i].c_str(), isSelected))
+                    {
+                        selectedFavoriteIndex = i;
+                        strcpy_s(currentPath, sizeof(currentPath), favoriteDirectories[i].c_str());
+                        needsRefresh = true;
+                    }
+                    if (isSelected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::SameLine();
+        }
+        else
+        {
+            ImGui::Text("(No favorites yet)");
+            ImGui::SameLine();
+        }
+
+        // Add to Favorites button
+        if (ImGui::Button("★ Add", ImVec2(60, 0)))
+        {
+            // Add current directory to favorites if it's not already there
+            bool alreadyFavorited = false;
+            for (const auto& fav : favoriteDirectories)
+            {
+                if (fav == currentPath)
+                {
+                    alreadyFavorited = true;
+                    break;
+                }
+            }
+
+            if (!alreadyFavorited && FileSystem::DirectoryExists(currentPath))
+            {
+                favoriteDirectories.push_back(currentPath);
+                selectedFavoriteIndex = favoriteDirectories.size() - 1;
+
+                // Save favorites to INI
+                std::string favoritesStr;
+                for (size_t i = 0; i < favoriteDirectories.size(); ++i)
+                {
+                    if (i > 0) favoritesStr += ";";
+                    favoritesStr += favoriteDirectories[i];
+                }
+                m_app->m_settings.SetString("FileExplorer", "Favorites", favoritesStr);
+                m_app->m_settings.Save();
+            }
+        }
+
+        // Remove from Favorites button
+        ImGui::SameLine();
+        if (ImGui::Button("✕ Remove", ImVec2(80, 0)))
+        {
+            if (selectedFavoriteIndex >= 0 && selectedFavoriteIndex < (int)favoriteDirectories.size())
+            {
+                favoriteDirectories.erase(favoriteDirectories.begin() + selectedFavoriteIndex);
+                selectedFavoriteIndex = -1;
+
+                // Save updated favorites to INI
+                std::string favoritesStr;
+                for (size_t i = 0; i < favoriteDirectories.size(); ++i)
+                {
+                    if (i > 0) favoritesStr += ";";
+                    favoritesStr += favoriteDirectories[i];
+                }
+                m_app->m_settings.SetString("FileExplorer", "Favorites", favoritesStr);
+                m_app->m_settings.Save();
+            }
+        }
+
+        ImGui::Separator();
         if (!availableDrives.empty())
         {
             ImGui::Text("Drives/Volumes:");
@@ -388,13 +548,6 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
 
             ImGui::EndTable();
         }
-
-        // Summary
-        ImGui::Separator();
-        ImGui::Text("Files: %zu | Directories: %zu | Total Size: %.2f KB", 
-            fileList.size(), directoryList.size(), 
-            std::accumulate(fileList.begin(), fileList.end(), 0.0,
-                [](double sum, const FileInfo& f) { return sum + f.sizeBytes; }) / 1024.0);
 
         ImGui::End();
     }
