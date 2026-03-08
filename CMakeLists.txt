@@ -135,6 +135,9 @@ target_include_directories(ImGuiApp PRIVATE
 # Enable precompiled headers
 target_precompile_headers(ImGuiApp PRIVATE include/pch.h)
 
+# Set as default startup project for Visual Studio
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ImGuiApp)
+
 # Platform-specific linkage
 if(WIN32)
     # Windows has opengl32.lib by default
