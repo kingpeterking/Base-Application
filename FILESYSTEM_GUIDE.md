@@ -31,6 +31,37 @@ for (const auto& dir : dirs) {
 }
 ```
 
+### Drive/Volume Operations
+
+#### ListAvailableDrives
+```cpp
+static std::vector<std::string> FileSystem::ListAvailableDrives();
+```
+Returns a vector of available drives or volumes on the system.
+
+**Platform-specific behavior:**
+- **Windows**: Returns all accessible drive letters (e.g., "C:", "D:", "E:")
+- **macOS**: Returns "/Volumes" and mounted volumes
+- **Linux**: Returns "/mnt", "/media", and "/" (root filesystem)
+
+```cpp
+// Example
+auto drives = FileSystem::ListAvailableDrives();
+for (const auto& drive : drives) {
+    std::cout << "Available: " << drive << std::endl;
+}
+
+// Windows output:
+// Available: C:
+// Available: D:
+// Available: E:
+
+// Linux output:
+// Available: /mnt
+// Available: /media
+// Available: /
+```
+
 #### ListFiles
 ```cpp
 static std::vector<FileInfo> FileSystem::ListFiles(
@@ -310,7 +341,14 @@ The File Explorer window provides an interactive interface for browsing files an
 
 ### Features
 
-1. **Directory Navigation**
+1. **Drive/Volume Selection**
+   - Dropdown menu to select available drives
+   - Windows: Shows all accessible drives (C:, D:, E:, etc.)
+   - macOS: Shows /Volumes and mounted volumes
+   - Linux: Shows /mnt, /media, and root (/)
+   - Automatically navigates to selected drive
+
+2. **Directory Navigation**
    - Manual path input field
    - Browse button to set to current directory
    - **Back button to navigate to parent directory**
@@ -349,6 +387,13 @@ The File Explorer window provides an interactive interface for browsing files an
 3. Check "File Explorer" checkbox
 4. Or use `Application::RenderFileExplorerWindow()`
 
+#### Selecting a Drive
+1. Click the "Drives/Volumes:" dropdown at the top
+2. Select the drive you want to navigate to
+3. Window automatically navigates to the root of that drive
+4. **Windows example**: Select "D:" to browse D:\ drive
+5. **Linux example**: Select "/mnt" to browse mounted volumes
+
 #### Navigating Directories
 1. Enter a path in the "Current Directory" field
 2. Click "Refresh" to load files
@@ -375,6 +420,8 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
     static char extensionFilter[256] = "";
     static std::vector<FileInfo> fileList;
     static std::vector<std::string> directoryList;
+    static std::vector<std::string> availableDrives;  // NEW: Drive list
+    static int currentDriveIndex = 0;                 // NEW: Selected drive index
     static bool needsRefresh = true;
 
     ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
@@ -383,22 +430,50 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
         // Load saved settings on first run
         if (needsRefresh && currentPath[0] == '\0')
         {
-            std::string savedPath = m_app->m_settings.GetString("FileExplorer", "LastDirectory", 
-                FileSystem::GetCurrentDirectory());
-            std::string savedFilter = m_app->m_settings.GetString("FileExplorer", "ExtensionFilter", "");
+            // ... load path and filter ...
 
-            strcpy_s(currentPath, sizeof(currentPath), savedPath.c_str());
-            strcpy_s(extensionFilter, sizeof(extensionFilter), savedFilter.c_str());
+            // NEW: Load available drives
+            availableDrives = FileSystem::ListAvailableDrives();
             needsRefresh = false;
         }
 
-        // UI controls...
-        // Directory path input and buttons
-        // Extension filter input
-        // Save defaults button
-        // File list table
+        // NEW: Drive selector dropdown
+        if (!availableDrives.empty())
+        {
+            ImGui::Text("Drives/Volumes:");
+            ImGui::SameLine();
 
-        ImGui::End();
+            if (ImGui::BeginCombo("##drive_selector", availableDrives[currentDriveIndex].c_str()))
+            {
+                for (size_t i = 0; i < availableDrives.size(); ++i)
+                {
+                    bool isSelected = (currentDriveIndex == i);
+                    if (ImGui::Selectable(availableDrives[i].c_str(), isSelected))
+                    {
+                        currentDriveIndex = i;
+
+                        // Navigate to selected drive
+                        #ifdef _WIN32
+                            std::string newPath = availableDrives[i] + "\\";
+                        #else
+                            std::string newPath = availableDrives[i];
+                            if (newPath.back() != '/') newPath += "/";
+                        #endif
+
+                        strcpy_s(currentPath, sizeof(currentPath), newPath.c_str());
+                        needsRefresh = true;
+                    }
+
+                    if (isSelected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+        }
+
+        // ... rest of window UI ...
     }
 }
 ```
