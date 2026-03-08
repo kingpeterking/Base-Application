@@ -238,6 +238,12 @@ void Application::LoadSettings()
     {
         implotWindow->SetEnabled(m_settings.GetBool("Windows", "ShowPlotDemo", false));
     }
+
+    WindowFunction* fileExplorerWindow = m_windowManager.GetWindow("File Explorer");
+    if (fileExplorerWindow)
+    {
+        fileExplorerWindow->SetEnabled(m_settings.GetBool("Windows", "ShowFileExplorer", false));
+    }
 }
 
 void Application::SaveSettings()
@@ -272,6 +278,12 @@ void Application::SaveSettings()
     if (implotWindow)
     {
         m_settings.SetBool("Windows", "ShowPlotDemo", implotWindow->IsEnabled());
+    }
+
+    WindowFunction* fileExplorerWindow = m_windowManager.GetWindow("File Explorer");
+    if (fileExplorerWindow)
+    {
+        m_settings.SetBool("Windows", "ShowFileExplorer", fileExplorerWindow->IsEnabled());
     }
 
     // Save to file
