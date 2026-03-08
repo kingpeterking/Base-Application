@@ -706,18 +706,44 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
 
 void WindowFunctions::RenderLogViewerWindow(bool* isOpen)
 {
-    ImGui::SetNextWindowSize(ImVec2(1000, 600), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(1200, 700), ImGuiCond_FirstUseEver);
 
     if (ImGui::Begin("Log Viewer", isOpen))
     {
-        // Filter checkboxes
+        // Static state for filters
         static bool showInfo = true;
         static bool showWarning = true;
         static bool showError = true;
         static bool showDebug = false;
         static bool autoScroll = true;
+        static std::set<std::string> enabledSources;
+        static std::set<std::string> knownSources; // Track sources we've seen before
+        static bool firstRun = true;
 
-        ImGui::Text("Filters:");
+        // Get all unique sources from logs
+        std::set<std::string> allSources = Logger::GetInstance().GetUniqueSources();
+
+        // Initialize enabled sources on first run (enable all)
+        if (firstRun)
+        {
+            enabledSources = allSources;
+            knownSources = allSources;
+            firstRun = false;
+        }
+
+        // Add only genuinely NEW sources to enabled list automatically
+        for (const auto& source : allSources)
+        {
+            // If this is a source we haven't seen before, enable it and mark as known
+            if (knownSources.find(source) == knownSources.end())
+            {
+                enabledSources.insert(source);
+                knownSources.insert(source);
+            }
+        }
+
+        // Top bar: Level filters and controls
+        ImGui::Text("Level Filters:");
         ImGui::SameLine();
         ImGui::Checkbox("Info", &showInfo);
         ImGui::SameLine();
@@ -756,72 +782,135 @@ void WindowFunctions::RenderLogViewerWindow(bool* isOpen)
 
         ImGui::Separator();
 
-        // Log table
-        if (ImGui::BeginTable("logs_table", 4, 
-            ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | 
-            ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY))
+        // Split window: Left panel (Source filters) and Right panel (Log table)
+        if (ImGui::BeginTable("log_viewer_layout", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV))
         {
-            ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 100);
-            ImGui::TableSetupColumn("Level", ImGuiTableColumnFlags_WidthFixed, 80);
-            ImGui::TableSetupColumn("Source", ImGuiTableColumnFlags_WidthFixed, 150);
-            ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableSetupScrollFreeze(0, 1); // Freeze header row
-            ImGui::TableHeadersRow();
+            // Setup columns: left panel (source filters) and right panel (logs)
+            ImGui::TableSetupColumn("Sources", ImGuiTableColumnFlags_WidthFixed, 200);
+            ImGui::TableSetupColumn("Logs", ImGuiTableColumnFlags_WidthStretch);
 
-            // Get filtered logs
-            auto logs = Logger::GetInstance().GetFilteredLogs(showInfo, showWarning, showError, showDebug);
+            ImGui::TableNextRow();
 
-            // Render each log entry
-            for (const auto& entry : logs)
+            // LEFT PANEL: Source filters
+            ImGui::TableSetColumnIndex(0);
+
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Source Filters");
+            ImGui::Separator();
+
+            // Select All / Deselect All buttons
+            if (ImGui::Button("Enable All", ImVec2(-1, 0)))
             {
-                ImGui::TableNextRow();
-
-                // Timestamp
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted(entry.timestamp.c_str());
-
-                // Level with color
-                ImGui::TableSetColumnIndex(1);
-                ImVec4 levelColor;
-                const char* levelText;
-                switch (entry.level)
-                {
-                    case LogLevel::Info:
-                        levelColor = ImVec4(0.4f, 0.8f, 1.0f, 1.0f);
-                        levelText = "INFO";
-                        break;
-                    case LogLevel::Warning:
-                        levelColor = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
-                        levelText = "WARNING";
-                        break;
-                    case LogLevel::Error:
-                        levelColor = ImVec4(1.0f, 0.3f, 0.3f, 1.0f);
-                        levelText = "ERROR";
-                        break;
-                    case LogLevel::Debug:
-                        levelColor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
-                        levelText = "DEBUG";
-                        break;
-                    default:
-                        levelColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-                        levelText = "UNKNOWN";
-                        break;
-                }
-                ImGui::TextColored(levelColor, "%s", levelText);
-
-                // Source
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextUnformatted(entry.source.c_str());
-
-                // Message
-                ImGui::TableSetColumnIndex(3);
-                ImGui::TextWrapped("%s", entry.message.c_str());
+                enabledSources = allSources;
+            }
+            if (ImGui::Button("Disable All", ImVec2(-1, 0)))
+            {
+                enabledSources.clear();
             }
 
-            // Auto-scroll to bottom
-            if (autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+            ImGui::Separator();
+
+            // Source checkboxes in a scrollable child window
+            if (ImGui::BeginChild("source_list", ImVec2(0, 0), true))
             {
-                ImGui::SetScrollHereY(1.0f);
+                if (allSources.empty())
+                {
+                    ImGui::TextDisabled("(No sources yet)");
+                }
+                else
+                {
+                    for (const auto& source : allSources)
+                    {
+                        bool enabled = enabledSources.find(source) != enabledSources.end();
+
+                        if (ImGui::Checkbox(source.c_str(), &enabled))
+                        {
+                            if (enabled)
+                            {
+                                enabledSources.insert(source);
+                            }
+                            else
+                            {
+                                enabledSources.erase(source);
+                            }
+                        }
+                    }
+                }
+
+                ImGui::EndChild();
+            }
+
+            // RIGHT PANEL: Log table
+            ImGui::TableSetColumnIndex(1);
+
+            // Log table
+            if (ImGui::BeginTable("logs_table", 4, 
+                ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | 
+                ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY))
+            {
+                ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 100);
+                ImGui::TableSetupColumn("Level", ImGuiTableColumnFlags_WidthFixed, 80);
+                ImGui::TableSetupColumn("Source", ImGuiTableColumnFlags_WidthFixed, 150);
+                ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupScrollFreeze(0, 1); // Freeze header row
+                ImGui::TableHeadersRow();
+
+                // Get filtered logs (by level and source)
+                auto logs = Logger::GetInstance().GetFilteredLogs(showInfo, showWarning, showError, showDebug, enabledSources);
+
+                // Render each log entry
+                for (const auto& entry : logs)
+                {
+                    ImGui::TableNextRow();
+
+                    // Timestamp
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::TextUnformatted(entry.timestamp.c_str());
+
+                    // Level with color
+                    ImGui::TableSetColumnIndex(1);
+                    ImVec4 levelColor;
+                    const char* levelText;
+                    switch (entry.level)
+                    {
+                        case LogLevel::Info:
+                            levelColor = ImVec4(0.4f, 0.8f, 1.0f, 1.0f);
+                            levelText = "INFO";
+                            break;
+                        case LogLevel::Warning:
+                            levelColor = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
+                            levelText = "WARNING";
+                            break;
+                        case LogLevel::Error:
+                            levelColor = ImVec4(1.0f, 0.3f, 0.3f, 1.0f);
+                            levelText = "ERROR";
+                            break;
+                        case LogLevel::Debug:
+                            levelColor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+                            levelText = "DEBUG";
+                            break;
+                        default:
+                            levelColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+                            levelText = "UNKNOWN";
+                            break;
+                    }
+                    ImGui::TextColored(levelColor, "%s", levelText);
+
+                    // Source
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::TextUnformatted(entry.source.c_str());
+
+                    // Message
+                    ImGui::TableSetColumnIndex(3);
+                    ImGui::TextWrapped("%s", entry.message.c_str());
+                }
+
+                // Auto-scroll to bottom
+                if (autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+                {
+                    ImGui::SetScrollHereY(1.0f);
+                }
+
+                ImGui::EndTable();
             }
 
             ImGui::EndTable();

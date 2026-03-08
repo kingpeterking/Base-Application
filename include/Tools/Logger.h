@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 #include <mutex>
 #include <chrono>
 #include <sstream>
@@ -71,6 +72,13 @@ public:
 
     // Get filtered logs
     std::vector<LogEntry> GetFilteredLogs(bool showInfo, bool showWarning, bool showError, bool showDebug) const;
+
+    // Get filtered logs by level and source
+    std::vector<LogEntry> GetFilteredLogs(bool showInfo, bool showWarning, bool showError, bool showDebug,
+                                           const std::set<std::string>& enabledSources) const;
+
+    // Get all unique sources from logs
+    std::set<std::string> GetUniqueSources() const;
 
     // Clear all logs
     void Clear();

@@ -65,6 +65,53 @@ std::vector<LogEntry> Logger::GetFilteredLogs(bool showInfo, bool showWarning, b
     return filtered;
 }
 
+std::vector<LogEntry> Logger::GetFilteredLogs(bool showInfo, bool showWarning, bool showError, bool showDebug,
+                                               const std::set<std::string>& enabledSources) const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    std::vector<LogEntry> filtered;
+
+    for (const auto& entry : m_logs)
+    {
+        // Check log level
+        bool includeLevelCheck = false;
+        switch (entry.level)
+        {
+            case LogLevel::Info:    includeLevelCheck = showInfo; break;
+            case LogLevel::Warning: includeLevelCheck = showWarning; break;
+            case LogLevel::Error:   includeLevelCheck = showError; break;
+            case LogLevel::Debug:   includeLevelCheck = showDebug; break;
+        }
+
+        // Check source (if empty, show all; otherwise check if source is enabled)
+        bool includeSourceCheck = enabledSources.empty() || 
+                                   enabledSources.find(entry.source) != enabledSources.end();
+
+        if (includeLevelCheck && includeSourceCheck)
+        {
+            filtered.push_back(entry);
+        }
+    }
+
+    return filtered;
+}
+
+std::set<std::string> Logger::GetUniqueSources() const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    std::set<std::string> sources;
+
+    for (const auto& entry : m_logs)
+    {
+        if (!entry.source.empty())
+        {
+            sources.insert(entry.source);
+        }
+    }
+
+    return sources;
+}
+
 void Logger::Clear()
 {
     std::lock_guard<std::mutex> lock(m_mutex);
