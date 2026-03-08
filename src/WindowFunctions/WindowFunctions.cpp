@@ -208,6 +208,7 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
     static std::vector<FileInfo> fileList;
     static std::vector<std::string> directoryList;
     static std::vector<std::string> availableDrives;
+    static std::vector<int> fileSelection;  // Use int (0/1) instead of bool to avoid std::vector<bool> issues
     static int currentDriveIndex = 0;
     static bool needsRefresh = true;
 
@@ -490,12 +491,39 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
         {
             directoryList = FileSystem::ListDirectories(currentPath);
             fileList = FileSystem::ListFiles(currentPath, extensionFilter);
+            fileSelection.resize(fileList.size(), false);  // Reset selection state for new file list
             needsRefresh = false;
         }
 
-        // File list with columns
-        if (ImGui::BeginTable("files_table", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+        // Ensure selection vector is the right size
+        if (fileSelection.size() != fileList.size())
         {
+            fileSelection.resize(fileList.size(), false);
+        }
+
+        // Select All / Deselect All buttons
+        if (ImGui::Button("Select All", ImVec2(100, 0)))
+        {
+            for (auto& selected : fileSelection)
+            {
+                selected = 1;
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Deselect All", ImVec2(120, 0)))
+        {
+            for (auto& selected : fileSelection)
+            {
+                selected = 0;
+            }
+        }
+
+        ImGui::Separator();
+
+        // File list with columns (added checkbox column)
+        if (ImGui::BeginTable("files_table", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+        {
+            ImGui::TableSetupColumn("Select", ImGuiTableColumnFlags_WidthFixed, 60);
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 80);
             ImGui::TableSetupColumn("Size (bytes)", ImGuiTableColumnFlags_WidthFixed, 100);
@@ -506,6 +534,8 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
             {
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
+                ImGui::TextDisabled("-");  // No selection for parent directory
+                ImGui::TableSetColumnIndex(1);
 
                 if (ImGui::Selectable("[DIR] ..", false, ImGuiSelectableFlags_SpanAllColumns))
                 {
@@ -515,7 +545,7 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
                     needsRefresh = true;
                 }
 
-                ImGui::TableSetColumnIndex(1);
+                ImGui::TableSetColumnIndex(2);
                 ImGui::Text("Parent");
             }
 
@@ -524,6 +554,8 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
             {
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
+                ImGui::TextDisabled("-");  // No selection for directories
+                ImGui::TableSetColumnIndex(1);
 
                 if (ImGui::Selectable((std::string("[DIR] ") + dir).c_str(), false, ImGuiSelectableFlags_SpanAllColumns))
                 {
@@ -533,24 +565,35 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
                     needsRefresh = true;
                 }
 
-                ImGui::TableSetColumnIndex(1);
+                ImGui::TableSetColumnIndex(2);
                 ImGui::Text("Directory");
             }
 
-            // List files
-            for (const auto& file : fileList)
+            // List files with checkboxes
+            for (size_t i = 0; i < fileList.size(); ++i)
             {
+                const auto& file = fileList[i];
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Selectable(file.filename.c_str(), false, ImGuiSelectableFlags_SpanAllColumns);
+
+                // Checkbox for file selection
+                std::string checkboxLabel = "##select_file_" + std::to_string(i);
+                bool isSelected = (fileSelection[i] != 0);
+                if (ImGui::Checkbox(checkboxLabel.c_str(), &isSelected))
+                {
+                    fileSelection[i] = isSelected ? 1 : 0;
+                }
 
                 ImGui::TableSetColumnIndex(1);
-                ImGui::Text("%s", file.extension.c_str());
+                ImGui::Selectable(file.filename.c_str(), false, ImGuiSelectableFlags_SpanAllColumns);
 
                 ImGui::TableSetColumnIndex(2);
-                ImGui::Text("%llu", file.sizeBytes);
+                ImGui::Text("%s", file.extension.c_str());
 
                 ImGui::TableSetColumnIndex(3);
+                ImGui::Text("%llu", file.sizeBytes);
+
+                ImGui::TableSetColumnIndex(4);
                 ImGui::Text("%zu", file.lineCount);
             }
 

@@ -17,7 +17,10 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 - ✅ **CURL** - HTTP/HTTPS request capabilities
 - ✅ **HTTP Client Tool** - Built-in URL request and response window
 - ✅ **Cross-Platform File System** - Complete file/directory operations API
-- ✅ **File Explorer Tool** - Browse directories and view file details with filtering
+- ✅ **File Explorer Tool** - Browse directories with file selection, favorites, and filtering
+- ✅ **File Selection** - Select/deselect individual files or all at once
+- ✅ **Favorite Directories** - Mark frequently-used directories for quick access
+- ✅ **Auto-filtering** - File list updates instantly as you type filter criteria
 - ✅ **Self-contained** - No external dependencies to install
 - ✅ **Application Class Architecture** - Clean, extensible design
 - ✅ **Cross-Platform OpenGL** - Smooth rendering across Windows, macOS, and Linux
@@ -643,6 +646,26 @@ For issues or questions:
 
 ## Recent Updates
 
+### Version 1.10
+- ✅ Added file selection checkboxes for each file in File Explorer
+  - Select/deselect individual files with checkboxes
+  - "Select All" button to mark all files at once
+  - "Deselect All" button to clear all selections
+  - Selection state managed per file
+- ✅ Moved summary statistics to top of File Explorer window
+  - File count, directory count, and total size now visible immediately
+  - Displayed in blue text for visual distinction
+- ✅ Added favorites system for frequently-used directories
+  - Mark current directory as favorite with ★ Add button
+  - Remove favorites with ✕ Remove button
+  - Favorites dropdown selector for quick navigation
+  - Automatic directory validation (error shown for deleted favorites)
+  - Favorites persisted to INI file across sessions
+- ✅ Implemented auto-refresh for extension filter
+  - File list updates instantly as you type filter criteria
+  - No need to click "Refresh" button manually
+  - Filter persists across sessions
+
 ### Version 1.9
 - ✅ Added cross-platform FileSystem utility class with comprehensive API
   - Directory and file listing with extension filtering
@@ -657,6 +680,13 @@ For issues or questions:
   - Directory statistics and summary
   - Persists last directory and filter to settings.ini
   - Automatically loads saved settings on startup
+- ✅ Added parent directory navigation (..)
+  - Back button for traversal
+  - GetParentDirectory() utility function
+- ✅ Added drive/volume selection dropdown
+  - Windows: Detects C:, D:, E: drives and other mounted drives
+  - Linux: Shows /mnt, /media, and / root
+  - macOS: Shows /Volumes and mount points
 
 ### Version 1.8
 - ✅ Merged Hello World and Application Info windows into single Application window
