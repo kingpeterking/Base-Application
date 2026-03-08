@@ -16,6 +16,8 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 - ✅ **ImPlot v0.16** - Professional data visualization with comprehensive demo examples
 - ✅ **CURL** - HTTP/HTTPS request capabilities
 - ✅ **HTTP Client Tool** - Built-in URL request and response window
+- ✅ **Cross-Platform File System** - Complete file/directory operations API
+- ✅ **File Explorer Tool** - Browse directories and view file details with filtering
 - ✅ **Self-contained** - No external dependencies to install
 - ✅ **Application Class Architecture** - Clean, extensible design
 - ✅ **Cross-Platform OpenGL** - Smooth rendering across Windows, macOS, and Linux
@@ -170,6 +172,7 @@ The application uses a modular WindowFunction/WindowManager architecture:
   - Application - Combined info panel and interactive controls (merged Hello World + Application Info)
   - Plot Demo - Data visualization with ImPlot
   - URL Request - HTTP/HTTPS client tool
+  - File Explorer - Directory browser with file filtering and details
 
 All window visibility settings are persisted across application runs.
 
@@ -281,7 +284,7 @@ m_windowManager.AddWindow("Panels", "MyCategory", "My Custom Window",
 
 ### Built-in Window Examples
 
-The application includes five example windows:
+The application includes six example windows:
 
 **1. RenderMainMenu()**
 - Central control panel for all windows
@@ -310,6 +313,14 @@ The application includes five example windows:
 - Copy response to clipboard
 - Real-time request status
 
+**6. RenderFileExplorerWindow()**
+- Cross-platform file browser and explorer
+- Directory navigation with path input
+- File listing with extension filtering
+- Detailed view: name, type, size (bytes), and line count
+- Settings persistence: saves last directory and filter to ini file
+- Automatically loads saved settings on next launch
+
 ## Tools Architecture
 
 The `Tools` folder contains reusable service classes:
@@ -334,6 +345,34 @@ if (!client.GetError().empty()) {
 - Wraps ImPlot functionality
 - Provides professional data visualization
 - Shows comprehensive demo of all plot types
+
+### FileSystem
+- Cross-platform file and directory operations
+- Complete API for file management:
+  - **Directory Operations**: List directories, list files with extension filtering
+  - **File Information**: Get size (bytes and line count), check existence
+  - **File Reading**: Read as string, read as lines, read character by position
+  - **File Writing**: Write new file, append to file
+  - **File Deletion**: Delete files and directories
+  - **Path Utilities**: Normalize paths, join paths, get extensions, absolute paths
+- Handles cross-platform path differences automatically
+- Exception-safe error handling
+
+```cpp
+// List files with extension filter
+auto files = FileSystem::ListFiles("/path/to/dir", ".txt");
+
+// Get file information
+auto info = FileSystem::GetFileInfo("file.txt");
+printf("File: %s, Size: %llu bytes, Lines: %zu\n", 
+    info.filename.c_str(), info.sizeBytes, info.lineCount);
+
+// Read file content
+std::vector<std::string> lines = FileSystem::ReadFileAsLines("file.txt");
+
+// Write to file
+FileSystem::WriteFile("output.txt", "Hello, World!");
+```
 
 ### Settings Manager
 - Persists application state to INI file
@@ -600,6 +639,21 @@ For issues or questions:
 5. Open an issue on GitHub
 
 ## Recent Updates
+
+### Version 1.9
+- ✅ Added cross-platform FileSystem utility class with comprehensive API
+  - Directory and file listing with extension filtering
+  - File reading (as string, lines, or by character position)
+  - File information (size in bytes and line count)
+  - File writing and deletion operations
+  - Cross-platform path handling utilities
+- ✅ Implemented File Explorer ImGui window
+  - Browse directories with manual path input
+  - Extension filter for targeted file listings
+  - Detailed file view (name, type, size, line count)
+  - Directory statistics and summary
+  - Persists last directory and filter to settings.ini
+  - Automatically loads saved settings on startup
 
 ### Version 1.8
 - ✅ Merged Hello World and Application Info windows into single Application window
