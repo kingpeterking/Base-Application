@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Tools/FileSystem.h"
+#include "Tools/Logger.h"
 #include <filesystem>
 #include <fstream>
 #include <algorithm>
@@ -17,12 +18,15 @@ FileSystem::~FileSystem()
 std::vector<std::string> FileSystem::ListDirectories(const std::string& path)
 {
     std::vector<std::string> directories;
-    
+
     try
     {
         if (!DirectoryExists(path))
+        {
+            LOG_WARNING_SRC("Directory does not exist: " + path, "FileSystem");
             return directories;
-        
+        }
+
         for (const auto& entry : fs::directory_iterator(path))
         {
             if (entry.is_directory())
@@ -30,14 +34,15 @@ std::vector<std::string> FileSystem::ListDirectories(const std::string& path)
                 directories.push_back(entry.path().filename().string());
             }
         }
-        
+
         std::sort(directories.begin(), directories.end());
+        LOG_DEBUG_SRC("Listed " + std::to_string(directories.size()) + " directories in: " + path, "FileSystem");
     }
-    catch (const std::exception&)
+    catch (const std::exception& e)
     {
-        // Handle error silently
+        LOG_ERROR_SRC("Failed to list directories in '" + path + "': " + e.what(), "FileSystem");
     }
-    
+
     return directories;
 }
 
@@ -88,12 +93,14 @@ std::vector<FileInfo> FileSystem::ListFiles(const std::string& path, const std::
         std::sort(files.begin(), files.end(), [](const FileInfo& a, const FileInfo& b) {
             return a.filename < b.filename;
         });
+
+        LOG_DEBUG_SRC("Listed " + std::to_string(files.size()) + " files in: " + path, "FileSystem");
     }
-    catch (const std::exception&)
+    catch (const std::exception& e)
     {
-        // Handle error silently
+        LOG_ERROR_SRC("Failed to list files in '" + path + "': " + e.what(), "FileSystem");
     }
-    
+
     return files;
 }
 

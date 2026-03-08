@@ -122,6 +122,7 @@ add_executable(ImGuiApp
     src/main.cpp
     src/Application.cpp
     src/Tools/Settings.cpp
+    src/Tools/Logger.cpp
     src/WindowFunctions/WindowFunction.cpp
     src/WindowFunctions/WindowManager.cpp
     src/Tools/Web/HTTPClient.cpp

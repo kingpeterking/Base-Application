@@ -3,6 +3,7 @@
 #include "Application.h"
 #include "WindowFunctions/WindowManager.h"
 #include "Tools/Web/HTTPClient.h"
+#include "Tools/Logger.h"
 
 WindowFunctions::WindowFunctions(Application* app)
     : m_app(app)
@@ -694,6 +695,133 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
 
                 ImGui::TableSetColumnIndex(4);
                 ImGui::Text("%zu", file.lineCount);
+            }
+
+            ImGui::EndTable();
+        }
+
+        ImGui::End();
+    }
+}
+
+void WindowFunctions::RenderLogViewerWindow(bool* isOpen)
+{
+    ImGui::SetNextWindowSize(ImVec2(1000, 600), ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin("Log Viewer", isOpen))
+    {
+        // Filter checkboxes
+        static bool showInfo = true;
+        static bool showWarning = true;
+        static bool showError = true;
+        static bool showDebug = false;
+        static bool autoScroll = true;
+
+        ImGui::Text("Filters:");
+        ImGui::SameLine();
+        ImGui::Checkbox("Info", &showInfo);
+        ImGui::SameLine();
+        ImGui::Checkbox("Warning", &showWarning);
+        ImGui::SameLine();
+        ImGui::Checkbox("Error", &showError);
+        ImGui::SameLine();
+        ImGui::Checkbox("Debug", &showDebug);
+        ImGui::SameLine(0, 30);
+        ImGui::Checkbox("Auto-scroll", &autoScroll);
+
+        ImGui::SameLine(0, 30);
+        if (ImGui::Button("Clear Logs"))
+        {
+            Logger::GetInstance().Clear();
+        }
+
+        ImGui::Separator();
+
+        // Log statistics
+        int totalLogs = Logger::GetInstance().GetTotalCount();
+        int infoCount = Logger::GetInstance().GetInfoCount();
+        int warningCount = Logger::GetInstance().GetWarningCount();
+        int errorCount = Logger::GetInstance().GetErrorCount();
+        int debugCount = Logger::GetInstance().GetDebugCount();
+
+        ImGui::Text("Total: %d | ", totalLogs);
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "Info: %d", infoCount);
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Warning: %d", warningCount);
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "Error: %d", errorCount);
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Debug: %d", debugCount);
+
+        ImGui::Separator();
+
+        // Log table
+        if (ImGui::BeginTable("logs_table", 4, 
+            ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | 
+            ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY))
+        {
+            ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 100);
+            ImGui::TableSetupColumn("Level", ImGuiTableColumnFlags_WidthFixed, 80);
+            ImGui::TableSetupColumn("Source", ImGuiTableColumnFlags_WidthFixed, 150);
+            ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupScrollFreeze(0, 1); // Freeze header row
+            ImGui::TableHeadersRow();
+
+            // Get filtered logs
+            auto logs = Logger::GetInstance().GetFilteredLogs(showInfo, showWarning, showError, showDebug);
+
+            // Render each log entry
+            for (const auto& entry : logs)
+            {
+                ImGui::TableNextRow();
+
+                // Timestamp
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextUnformatted(entry.timestamp.c_str());
+
+                // Level with color
+                ImGui::TableSetColumnIndex(1);
+                ImVec4 levelColor;
+                const char* levelText;
+                switch (entry.level)
+                {
+                    case LogLevel::Info:
+                        levelColor = ImVec4(0.4f, 0.8f, 1.0f, 1.0f);
+                        levelText = "INFO";
+                        break;
+                    case LogLevel::Warning:
+                        levelColor = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
+                        levelText = "WARNING";
+                        break;
+                    case LogLevel::Error:
+                        levelColor = ImVec4(1.0f, 0.3f, 0.3f, 1.0f);
+                        levelText = "ERROR";
+                        break;
+                    case LogLevel::Debug:
+                        levelColor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+                        levelText = "DEBUG";
+                        break;
+                    default:
+                        levelColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+                        levelText = "UNKNOWN";
+                        break;
+                }
+                ImGui::TextColored(levelColor, "%s", levelText);
+
+                // Source
+                ImGui::TableSetColumnIndex(2);
+                ImGui::TextUnformatted(entry.source.c_str());
+
+                // Message
+                ImGui::TableSetColumnIndex(3);
+                ImGui::TextWrapped("%s", entry.message.c_str());
+            }
+
+            // Auto-scroll to bottom
+            if (autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+            {
+                ImGui::SetScrollHereY(1.0f);
             }
 
             ImGui::EndTable();

@@ -31,6 +31,7 @@ private:
     void RenderImPlotDemoWindow(bool* isOpen);
     void RenderURLRequestWindow(bool* isOpen);
     void RenderFileExplorerWindow(bool* isOpen);
+    void RenderLogViewerWindow(bool* isOpen);
 
     GLFWwindow* m_window;
     ImVec4 m_clearColor;

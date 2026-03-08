@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Tools/Web/HTTPClient.h"
+#include "Tools/Logger.h"
 #include <sstream>
 
 // CURL write callback
@@ -70,6 +71,7 @@ bool HTTPClient::PerformRequest(const std::string& url, HTTPMethod method,
     if (!curl)
     {
         m_response.error = "Failed to initialize CURL";
+        LOG_ERROR_SRC("Failed to initialize CURL", "HTTPClient");
         m_isLoading = false;
         return false;
     }
@@ -78,6 +80,9 @@ bool HTTPClient::PerformRequest(const std::string& url, HTTPMethod method,
     {
         // Build URL with query parameters
         std::string fullUrl = BuildQueryString(url, params);
+
+        std::string logMsg = std::string(GetMethodString(method)) + " " + fullUrl;
+        LOG_INFO_SRC(logMsg, "HTTPClient");
 
         curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, HTTPClientWriteCallback);
@@ -144,6 +149,7 @@ bool HTTPClient::PerformRequest(const std::string& url, HTTPMethod method,
         {
             m_response.error = std::string("CURL Error: ") + curl_easy_strerror(res);
             m_response.success = false;
+            LOG_ERROR_SRC(m_response.error, "HTTPClient");
         }
         else
         {
@@ -151,12 +157,18 @@ bool HTTPClient::PerformRequest(const std::string& url, HTTPMethod method,
             if (!m_response.success && m_response.statusCode > 0)
             {
                 m_response.error = "HTTP " + std::to_string(m_response.statusCode);
+                LOG_WARNING_SRC("HTTP request returned status code: " + std::to_string(m_response.statusCode), "HTTPClient");
+            }
+            else
+            {
+                LOG_INFO_SRC("HTTP request completed successfully (Status: " + std::to_string(m_response.statusCode) + ")", "HTTPClient");
             }
         }
     }
     catch (const std::exception& e)
     {
         m_response.error = std::string("Exception: ") + e.what();
+        LOG_ERROR_SRC(m_response.error, "HTTPClient");
         m_response.success = false;
     }
 

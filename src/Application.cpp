@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Application.h"
+#include "Tools/Logger.h"
 
 Application::Application()
     : m_window(nullptr),
@@ -21,13 +22,21 @@ Application::~Application()
 
 bool Application::Initialize()
 {
+    LOG_INFO("Application initialization started");
+
     // Setup GLFW error callback
     glfwSetErrorCallback([](int error, const char* description) {
-        fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+        std::string errorMsg = "GLFW Error " + std::to_string(error) + ": " + description;
+        LOG_ERROR_SRC(errorMsg, "GLFW");
+        fprintf(stderr, "%s\n", errorMsg.c_str());
     });
 
     if (!glfwInit())
+    {
+        LOG_ERROR("Failed to initialize GLFW");
         return false;
+    }
+    LOG_INFO("GLFW initialized successfully");
 
     // GL 3.2 + GLSL 150 with compatibility profile
     const char* glsl_version = "#version 150";
@@ -37,21 +46,30 @@ bool Application::Initialize()
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
+    LOG_INFO("OpenGL context configured: 3.2 Compatibility Profile");
 
     // Create window with graphics context
     m_window = glfwCreateWindow(1280, 720, "Dear ImGui Example", NULL, NULL);
     if (m_window == NULL)
+    {
+        LOG_ERROR("Failed to create GLFW window");
         return false;
+    }
+    LOG_INFO("GLFW window created successfully (1280x720)");
 
     glfwMakeContextCurrent(m_window);
     glfwSwapInterval(1); // Enable vsync
+    LOG_INFO("VSync enabled");
 
     // Initialize OpenGL function pointers
     GLFunc::InitFunctions();
+    LOG_INFO("OpenGL functions initialized");
 
     SetupImGui();
     SetupWindows();
     LoadSettings();
+
+    LOG_INFO("Application initialization completed successfully");
     return true;
 }
 
@@ -148,6 +166,10 @@ void Application::SetupWindows()
     // Setup file explorer window
     m_windowManager.AddWindow("Tools", "Files", "File Explorer", 
         [this](bool* isOpen) { RenderFileExplorerWindow(isOpen); });
+
+    // Setup log viewer window
+    m_windowManager.AddWindow("Tools", "Debug", "Log Viewer", 
+        [this](bool* isOpen) { RenderLogViewerWindow(isOpen); });
 }
 
 // Window rendering delegations to WindowFunctions
@@ -179,6 +201,11 @@ void Application::RenderURLRequestWindow(bool* isOpen)
 void Application::RenderFileExplorerWindow(bool* isOpen)
 {
     m_windowFunctions->RenderFileExplorerWindow(isOpen);
+}
+
+void Application::RenderLogViewerWindow(bool* isOpen)
+{
+    m_windowFunctions->RenderLogViewerWindow(isOpen);
 }
 
 void Application::Shutdown()

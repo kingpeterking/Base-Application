@@ -13,6 +13,7 @@ public:
     void RenderImPlotDemoWindow(bool* isOpen);
     void RenderURLRequestWindow(bool* isOpen);
     void RenderFileExplorerWindow(bool* isOpen);
+    void RenderLogViewerWindow(bool* isOpen);
 
 private:
     class Application* m_app;
