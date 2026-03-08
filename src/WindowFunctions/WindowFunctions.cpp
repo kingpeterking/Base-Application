@@ -199,3 +199,132 @@ void WindowFunctions::RenderURLRequestWindow(bool* isOpen)
         ImGui::End();
     }
 }
+
+void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
+{
+    static char currentPath[512] = "";
+    static char extensionFilter[256] = "";
+    static std::vector<FileInfo> fileList;
+    static std::vector<std::string> directoryList;
+    static bool needsRefresh = true;
+
+    ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("File Explorer", isOpen))
+    {
+        // Load settings on first run
+        if (needsRefresh && currentPath[0] == '\0')
+        {
+            std::string savedPath = m_app->m_settings.GetString("FileExplorer", "LastDirectory", 
+                FileSystem::GetCurrentDirectory());
+            std::string savedFilter = m_app->m_settings.GetString("FileExplorer", "ExtensionFilter", "");
+
+            strcpy_s(currentPath, sizeof(currentPath), savedPath.c_str());
+            strcpy_s(extensionFilter, sizeof(extensionFilter), savedFilter.c_str());
+            needsRefresh = false;
+        }
+
+        // Directory path input
+        ImGui::Text("Current Directory:");
+        ImGui::InputText("##directory_path", currentPath, sizeof(currentPath));
+        ImGui::SameLine();
+        if (ImGui::Button("Browse##dir", ImVec2(80, 0)))
+        {
+            // In a real app, you'd use a file browser dialog
+            // For now, set to current directory
+            std::string cwd = FileSystem::GetCurrentDirectory();
+            strcpy_s(currentPath, sizeof(currentPath), cwd.c_str());
+            needsRefresh = true;
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Refresh", ImVec2(80, 0)))
+        {
+            needsRefresh = true;
+        }
+
+        ImGui::Separator();
+
+        // Extension filter input
+        ImGui::Text("Extension Filter:");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(200);
+        ImGui::InputText("##extension_filter", extensionFilter, sizeof(extensionFilter));
+        ImGui::SameLine();
+        ImGui::TextDisabled("(e.g., .txt or .cpp;.h)");
+
+        // Save settings button
+        ImGui::SameLine();
+        if (ImGui::Button("Save Defaults", ImVec2(100, 0)))
+        {
+            m_app->m_settings.SetString("FileExplorer", "LastDirectory", currentPath);
+            m_app->m_settings.SetString("FileExplorer", "ExtensionFilter", extensionFilter);
+            m_app->m_settings.Save();
+        }
+
+        ImGui::Separator();
+
+        // Refresh file list if needed
+        if (needsRefresh && FileSystem::DirectoryExists(currentPath))
+        {
+            directoryList = FileSystem::ListDirectories(currentPath);
+            fileList = FileSystem::ListFiles(currentPath, extensionFilter);
+            needsRefresh = false;
+        }
+
+        // File list with columns
+        if (ImGui::BeginTable("files_table", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+        {
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 80);
+            ImGui::TableSetupColumn("Size (bytes)", ImGuiTableColumnFlags_WidthFixed, 100);
+            ImGui::TableSetupColumn("Lines", ImGuiTableColumnFlags_WidthFixed, 60);
+            ImGui::TableHeadersRow();
+
+            // List directories first
+            for (const auto& dir : directoryList)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+
+                if (ImGui::Selectable((std::string("[DIR] ") + dir).c_str(), false, ImGuiSelectableFlags_SpanAllColumns))
+                {
+                    // Navigate to directory
+                    std::string newPath = FileSystem::JoinPath(currentPath, dir);
+                    strcpy_s(currentPath, sizeof(currentPath), newPath.c_str());
+                    needsRefresh = true;
+                }
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Directory");
+            }
+
+            // List files
+            for (const auto& file : fileList)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Selectable(file.filename.c_str(), false, ImGuiSelectableFlags_SpanAllColumns);
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("%s", file.extension.c_str());
+
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%llu", file.sizeBytes);
+
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("%zu", file.lineCount);
+            }
+
+            ImGui::EndTable();
+        }
+
+        // Summary
+        ImGui::Separator();
+        ImGui::Text("Files: %zu | Directories: %zu | Total Size: %.2f KB", 
+            fileList.size(), directoryList.size(), 
+            std::accumulate(fileList.begin(), fileList.end(), 0.0,
+                [](double sum, const FileInfo& f) { return sum + f.sizeBytes; }) / 1024.0);
+
+        ImGui::End();
+    }
+}

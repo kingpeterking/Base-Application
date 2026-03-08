@@ -140,6 +140,10 @@ void Application::SetupWindows()
     // Setup URL request window
     m_windowManager.AddWindow("Tools", "Network", "URL Request", 
         [this](bool* isOpen) { RenderURLRequestWindow(isOpen); });
+
+    // Setup file explorer window
+    m_windowManager.AddWindow("Tools", "Files", "File Explorer", 
+        [this](bool* isOpen) { RenderFileExplorerWindow(isOpen); });
 }
 
 // Window rendering delegations to WindowFunctions
@@ -166,6 +170,11 @@ void Application::RenderImPlotDemoWindow(bool* isOpen)
 void Application::RenderURLRequestWindow(bool* isOpen)
 {
     m_windowFunctions->RenderURLRequestWindow(isOpen);
+}
+
+void Application::RenderFileExplorerWindow(bool* isOpen)
+{
+    m_windowFunctions->RenderFileExplorerWindow(isOpen);
 }
 
 void Application::Shutdown()

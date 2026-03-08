@@ -15,6 +15,8 @@
 #include <fstream>
 #include <algorithm>
 #include <cstdint>
+#include <vector>
+#include <numeric>
 
 // GLFW
 #define GLFW_INCLUDE_NONE
@@ -48,6 +50,7 @@
 // Tools
 #include "Tools/HTTPClient.h"
 #include "Tools/ImPlotClient.h"
+#include "Tools/FileSystem.h"
 
 // Forward declaration for WindowFunctions
 class WindowFunctions;
