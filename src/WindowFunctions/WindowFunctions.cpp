@@ -227,6 +227,14 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
         ImGui::Text("Current Directory:");
         ImGui::InputText("##directory_path", currentPath, sizeof(currentPath));
         ImGui::SameLine();
+        if (ImGui::Button("Back##dir", ImVec2(60, 0)))
+        {
+            // Navigate to parent directory
+            std::string parentPath = FileSystem::GetParentDirectory(currentPath);
+            strcpy_s(currentPath, sizeof(currentPath), parentPath.c_str());
+            needsRefresh = true;
+        }
+        ImGui::SameLine();
         if (ImGui::Button("Browse##dir", ImVec2(80, 0)))
         {
             // In a real app, you'd use a file browser dialog
@@ -280,7 +288,24 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
             ImGui::TableSetupColumn("Lines", ImGuiTableColumnFlags_WidthFixed, 60);
             ImGui::TableHeadersRow();
 
-            // List directories first
+            // Add parent directory entry (..)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+
+                if (ImGui::Selectable("[DIR] ..", false, ImGuiSelectableFlags_SpanAllColumns))
+                {
+                    // Navigate to parent directory
+                    std::string parentPath = FileSystem::GetParentDirectory(currentPath);
+                    strcpy_s(currentPath, sizeof(currentPath), parentPath.c_str());
+                    needsRefresh = true;
+                }
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Parent");
+            }
+
+            // List directories
             for (const auto& dir : directoryList)
             {
                 ImGui::TableNextRow();

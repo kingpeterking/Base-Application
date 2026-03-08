@@ -371,6 +371,27 @@ std::string FileSystem::GetFileName(const std::string& filepath)
     return fs::path(filepath).filename().string();
 }
 
+std::string FileSystem::GetParentDirectory(const std::string& path)
+{
+    try
+    {
+        fs::path p(path);
+        fs::path parent = p.parent_path();
+
+        if (parent.empty() || parent == p)
+        {
+            // Already at root, return the same path
+            return path;
+        }
+
+        return parent.string();
+    }
+    catch (const std::exception&)
+    {
+        return path;
+    }
+}
+
 std::string FileSystem::GetDirectoryPath(const std::string& filepath)
 {
     return fs::path(filepath).parent_path().string();

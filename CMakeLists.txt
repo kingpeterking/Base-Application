@@ -39,7 +39,7 @@ FetchContent_Declare(
 )
 
 # CURL
-FetchContent_Declare(
+FetchContent_Declare( 
     curl
     GIT_REPOSITORY https://github.com/curl/curl.git
     GIT_TAG curl-8_5_0

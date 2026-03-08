@@ -48,6 +48,7 @@ public:
     static std::string JoinPath(const std::string& dir, const std::string& file);
     static std::string GetFileExtension(const std::string& filename);
     static std::string GetFileName(const std::string& filepath);
+    static std::string GetParentDirectory(const std::string& path);
     static std::string GetDirectoryPath(const std::string& filepath);
     static std::string GetAbsolutePath(const std::string& relativePath);
 
