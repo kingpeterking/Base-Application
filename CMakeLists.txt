@@ -14,6 +14,14 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "Build GLFW tests" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build GLFW examples" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "Generate installation target for GLFW" FORCE)
 
+# CURL configuration (set before FetchContent_Declare) - Enable SSL/TLS support
+set(CURL_ENABLE_SSL ON CACHE BOOL "Enable SSL/TLS support in CURL" FORCE)
+# Use Windows native SChannel instead of OpenSSL
+set(CURL_USE_SCHANNEL ON CACHE BOOL "Use Windows native SChannel for SSL/TLS" FORCE)
+set(CURL_USE_OPENSSL OFF CACHE BOOL "Disable OpenSSL" FORCE)
+set(BUILD_CURL_EXE OFF CACHE BOOL "Build curl executable" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "Build CURL tests" FORCE)
+
 # SimpleIni - header-only library from Brodie Thiesfield
 # We'll create local SimpleIni headers
 
