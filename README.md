@@ -14,13 +14,14 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 - ✅ **Window Manager** - Modular ImGui window architecture
 - ✅ **Main Menu** - Centralized window visibility control
 - ✅ **ImPlot v0.16** - Professional data visualization with comprehensive demo examples
-- ✅ **CURL** - HTTP/HTTPS request capabilities
+- ✅ **CURL** - HTTP/HTTPS request capabilities with Windows native SChannel SSL/TLS
 - ✅ **HTTP Client Tool** - Full-featured HTTP client with multiple request types
   - Support for GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS methods
   - URL parameter builder with easy add/remove interface
   - Request payload input for POST/PUT/DELETE/PATCH
   - Response codes and error messages
   - CURL error reporting
+  - **HTTPS support with no external dependencies**
 - ✅ **Web Folder** - Organized web-related functionality ready for future expansion
 - ✅ **Cross-Platform File System** - Complete file/directory operations API
 - ✅ **File Explorer Tool** - Browse directories with file selection, favorites, and filtering
@@ -671,6 +672,14 @@ For issues or questions:
 6. Open an issue on GitHub
 
 ## Recent Updates
+
+### Version 1.11.1
+- ✅ Fixed HTTPS/SSL support for CURL
+  - Changed from requiring external OpenSSL to Windows native **SChannel**
+  - HTTPS requests now work without additional dependencies
+  - Tested with `https://www.bbc.com` and other HTTPS APIs
+  - Updated CMakeLists.txt with proper CURL SSL configuration
+  - Cross-platform support: Windows (SChannel), macOS/Linux (native TLS)
 
 ### Version 1.11
 - ✅ Enhanced HTTP Client with full REST API support
