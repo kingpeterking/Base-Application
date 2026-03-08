@@ -626,17 +626,20 @@ To extend this project:
 ### CMake
 - [Official Documentation](https://cmake.org/cmake/help/latest/)
 
-### Settings Management
+### Documentation Files
 - [SETTINGS_GUIDE.md](SETTINGS_GUIDE.md) - Complete settings API documentation
+- [FILESYSTEM_GUIDE.md](FILESYSTEM_GUIDE.md) - File handling and File Explorer window guide
+- [WINDOW_MANAGER_GUIDE.md](WINDOW_MANAGER_GUIDE.md) - Window management system documentation
 
 ## Getting Help
 
 For issues or questions:
 1. Check the troubleshooting section above
 2. Review [SETTINGS_GUIDE.md](SETTINGS_GUIDE.md) for settings-related questions
-3. Review [WINDOW_MANAGER_GUIDE.md](WINDOW_MANAGER_GUIDE.md) for window management questions
-4. Review the ImGui/GLFW documentation
-5. Open an issue on GitHub
+3. Review [FILESYSTEM_GUIDE.md](FILESYSTEM_GUIDE.md) for file handling questions
+4. Review [WINDOW_MANAGER_GUIDE.md](WINDOW_MANAGER_GUIDE.md) for window management questions
+5. Review the ImGui/GLFW documentation
+6. Open an issue on GitHub
 
 ## Recent Updates
 
