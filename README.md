@@ -15,7 +15,13 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 - ✅ **Main Menu** - Centralized window visibility control
 - ✅ **ImPlot v0.16** - Professional data visualization with comprehensive demo examples
 - ✅ **CURL** - HTTP/HTTPS request capabilities
-- ✅ **HTTP Client Tool** - Built-in URL request and response window
+- ✅ **HTTP Client Tool** - Full-featured HTTP client with multiple request types
+  - Support for GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS methods
+  - URL parameter builder with easy add/remove interface
+  - Request payload input for POST/PUT/DELETE/PATCH
+  - Response codes and error messages
+  - CURL error reporting
+- ✅ **Web Folder** - Organized web-related functionality ready for future expansion
 - ✅ **Cross-Platform File System** - Complete file/directory operations API
 - ✅ **File Explorer Tool** - Browse directories with file selection, favorites, and filtering
 - ✅ **File Selection** - Select/deselect individual files or all at once
@@ -36,8 +42,10 @@ Base-Application/
 │   ├── Tools/
 │   │   ├── Settings.h                  # Settings management class
 │   │   ├── SimpleIni.h                 # INI file parser
-│   │   ├── HTTPClient.h                # HTTP/HTTPS client
-│   │   └── ImPlotClient.h              # ImPlot visualization wrapper
+│   │   ├── ImPlotClient.h              # ImPlot visualization wrapper
+│   │   ├── FileSystem.h                # Cross-platform file operations
+│   │   └── Web/
+│   │       └── HTTPClient.h            # HTTP/HTTPS client with REST support
 │   └── WindowFunctions/
 │       ├── OpenGLFunctions.h           # Cross-platform OpenGL function wrappers
 │       ├── WindowFunction.h            # ImGui window wrapper class
@@ -47,6 +55,24 @@ Base-Application/
 │   ├── main.cpp                        # Entry point
 │   ├── Application.cpp                 # Application implementation
 │   ├── pch.cpp                         # PCH source file
+│   ├── Tools/
+│   │   ├── Settings.cpp                # Settings implementation
+│   │   ├── ImPlotClient.cpp            # ImPlot wrapper implementation
+│   │   ├── FileSystem.cpp              # File system implementation
+│   │   └── Web/
+│   │       └── HTTPClient.cpp          # HTTP client implementation
+│   └── WindowFunctions/
+│       ├── WindowFunction.cpp          # Window function implementation
+│       ├── WindowManager.cpp           # Window manager implementation
+│       └── WindowFunctions.cpp         # Window rendering implementations
+├── .gitignore                          # Git ignore rules
+├── README.md                           # This file
+├── SETTINGS_GUIDE.md                   # Settings usage documentation
+├── WINDOW_MANAGER_GUIDE.md             # Window management documentation
+├── FILESYSTEM_GUIDE.md                 # File system and explorer documentation
+├── FILESYSTEM_IMPLEMENTATION.md        # Implementation details
+└── IMPLEMENTATION_SUMMARY.md           # Implementation summary
+```
 │   ├── Tools/
 │   │   ├── Settings.cpp                # Settings implementation
 │   │   ├── HTTPClient.cpp              # HTTP client implementation
@@ -645,6 +671,24 @@ For issues or questions:
 6. Open an issue on GitHub
 
 ## Recent Updates
+
+### Version 1.11
+- ✅ Enhanced HTTP Client with full REST API support
+  - Support for all HTTP methods: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS
+  - URL parameter builder with add/remove interface
+  - Request payload input for request bodies
+  - Display HTTP status codes (200, 404, 500, etc.)
+  - CURL error reporting on screen
+  - Better response feedback with status indicators
+- ✅ Reorganized web functionality into dedicated Web folder
+  - Created `include/Tools/Web/` and `src/Tools/Web/` folders
+  - Moved HTTPClient to Web folder structure
+  - Foundation for future web-related features
+- ✅ Improved HTTP Request window UI
+  - Larger window for better visibility (1000x700)
+  - Collapsible sections for parameters and payload
+  - Clear visual feedback for request status
+  - Emoji indicators (✓, ✗, ⚠, ⏳) for quick status recognition
 
 ### Version 1.10
 - ✅ Added file selection checkboxes for each file in File Explorer
