@@ -2,24 +2,36 @@
     "version": 3,
     "configurePresets": [
         {
-            "name": "default",
+            "name": "debug",
+            "displayName": "Debug",
+            "description": "Debug build configuration with full debugging support",
             "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
+            },
+            "binaryDir": "${sourceDir}/build"
+        },
+        {
+            "name": "release",
+            "displayName": "Release",
+            "description": "Release build configuration with optimizations",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
             },
             "binaryDir": "${sourceDir}/build"
         }
     ],
     "buildPresets": [
         {
-            "name": "default",
-            "configurePreset": "default"
-        }
-    ],
-    "testPresets": [
+            "name": "debug",
+            "displayName": "Debug",
+            "configurePreset": "debug"
+        },
         {
-            "name": "default",
-            "configurePreset": "default"
+            "name": "release",
+            "displayName": "Release",
+            "configurePreset": "release"
         }
     ]
 }
