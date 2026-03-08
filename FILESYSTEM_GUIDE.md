@@ -290,15 +290,18 @@ std::string noExt = FileSystem::GetFileExtension("README");
 // Returns: "" (empty string)
 ```
 
-#### GetFileName
+#### GetParentDirectory
 ```cpp
-static std::string FileSystem::GetFileName(const std::string& filepath);
+static std::string FileSystem::GetParentDirectory(const std::string& path);
 ```
-Extracts just the filename from a full path (removes directory part).
+Returns the parent directory path. Safe at root - returns the same path if already at root.
 
 ```cpp
-std::string name = FileSystem::GetFileName("/home/user/documents/report.pdf");
-// Returns: "report.pdf"
+std::string parent = FileSystem::GetParentDirectory("/home/user/documents");
+// Returns: "/home/user"
+
+std::string root = FileSystem::GetParentDirectory("/");
+// Returns: "/" (same path - already at root)
 ```
 
 ## File Explorer ImGui Window
@@ -310,7 +313,9 @@ The File Explorer window provides an interactive interface for browsing files an
 1. **Directory Navigation**
    - Manual path input field
    - Browse button to set to current directory
+   - **Back button to navigate to parent directory**
    - Refresh button to reload file list
+   - **Click on ".." to navigate to parent directory**
    - Click on directories to navigate into them
 
 2. **File Information Display**
@@ -347,8 +352,10 @@ The File Explorer window provides an interactive interface for browsing files an
 #### Navigating Directories
 1. Enter a path in the "Current Directory" field
 2. Click "Refresh" to load files
-3. Or click on a directory name in the table to enter it
-4. Use the "Browse" button to jump to current working directory
+3. **Click the "Back" button to go up one directory level**
+4. **Or click on ".." in the file list to navigate to parent directory**
+5. Click on a directory name in the table to enter it
+6. Use the "Browse" button to jump to current working directory
 
 #### Filtering Files
 1. Enter an extension filter: `.txt`, `.cpp;.h`, etc.
