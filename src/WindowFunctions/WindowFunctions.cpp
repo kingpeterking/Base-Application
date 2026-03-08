@@ -204,6 +204,7 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
 {
     static char currentPath[512] = "";
     static char extensionFilter[256] = "";
+    static char previousFilter[256] = "";
     static std::vector<FileInfo> fileList;
     static std::vector<std::string> directoryList;
     static std::vector<std::string> availableDrives;
@@ -465,6 +466,13 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
         ImGui::InputText("##extension_filter", extensionFilter, sizeof(extensionFilter));
         ImGui::SameLine();
         ImGui::TextDisabled("(e.g., .txt or .cpp;.h)");
+
+        // Check if filter has changed and trigger refresh
+        if (strcmp(extensionFilter, previousFilter) != 0)
+        {
+            strcpy_s(previousFilter, sizeof(previousFilter), extensionFilter);
+            needsRefresh = true;
+        }
 
         // Save settings button
         ImGui::SameLine();
