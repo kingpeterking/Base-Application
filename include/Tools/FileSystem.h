@@ -49,6 +49,9 @@ public:
     static std::string GetFileExtension(const std::string& filename);
     static std::string GetFileName(const std::string& filepath);
     static std::string GetParentDirectory(const std::string& path);
+
+    // Drive/Volume operations
+    static std::vector<std::string> ListAvailableDrives();
     static std::string GetDirectoryPath(const std::string& filepath);
     static std::string GetAbsolutePath(const std::string& relativePath);
 

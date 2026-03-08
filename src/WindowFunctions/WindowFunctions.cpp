@@ -206,6 +206,8 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
     static char extensionFilter[256] = "";
     static std::vector<FileInfo> fileList;
     static std::vector<std::string> directoryList;
+    static std::vector<std::string> availableDrives;
+    static int currentDriveIndex = 0;
     static bool needsRefresh = true;
 
     ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
@@ -220,7 +222,51 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
 
             strcpy_s(currentPath, sizeof(currentPath), savedPath.c_str());
             strcpy_s(extensionFilter, sizeof(extensionFilter), savedFilter.c_str());
+
+            // Load available drives
+            availableDrives = FileSystem::ListAvailableDrives();
             needsRefresh = false;
+        }
+
+        // Drive selector (Windows/macOS/Linux)
+        if (!availableDrives.empty())
+        {
+            ImGui::Text("Drives/Volumes:");
+            ImGui::SameLine();
+
+            // Create a combo box for drive selection
+            if (ImGui::BeginCombo("##drive_selector", availableDrives[currentDriveIndex].c_str()))
+            {
+                for (size_t i = 0; i < availableDrives.size(); ++i)
+                {
+                    bool isSelected = (currentDriveIndex == i);
+                    if (ImGui::Selectable(availableDrives[i].c_str(), isSelected))
+                    {
+                        currentDriveIndex = i;
+
+                        // Navigate to selected drive
+                        #ifdef _WIN32
+                            std::string newPath = availableDrives[i] + "\\";
+                        #else
+                            std::string newPath = availableDrives[i];
+                            if (newPath.back() != '/') newPath += "/";
+                        #endif
+
+                        strcpy_s(currentPath, sizeof(currentPath), newPath.c_str());
+                        needsRefresh = true;
+                    }
+
+                    if (isSelected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            ImGui::SameLine();
+            ImGui::Text("| ");
+            ImGui::SameLine();
         }
 
         // Directory path input

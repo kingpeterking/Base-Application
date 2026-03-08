@@ -413,3 +413,44 @@ std::string FileSystem::NormalizePath(const std::string& path)
 {
     return fs::path(path).string();
 }
+
+std::vector<std::string> FileSystem::ListAvailableDrives()
+{
+    std::vector<std::string> drives;
+
+#ifdef _WIN32
+    // Windows: Check all drive letters A through Z
+    for (char drive = 'A'; drive <= 'Z'; ++drive)
+    {
+        std::string drivePath = std::string(1, drive) + ":\\";
+        if (DirectoryExists(drivePath))
+        {
+            drives.push_back(std::string(1, drive) + ":");
+        }
+    }
+#elif defined(__APPLE__) || defined(__linux__)
+    // macOS and Linux: List mounted volumes from /Volumes (macOS) or check /mnt, /media (Linux)
+    #ifdef __APPLE__
+        if (DirectoryExists("/Volumes"))
+        {
+            drives.push_back("/Volumes");
+        }
+    #endif
+
+    // Try common Linux mount points
+    if (DirectoryExists("/mnt"))
+    {
+        drives.push_back("/mnt");
+    }
+    if (DirectoryExists("/media"))
+    {
+        drives.push_back("/media");
+    }
+
+    // Always add root
+    drives.push_back("/");
+#endif
+
+    return drives;
+}
+
