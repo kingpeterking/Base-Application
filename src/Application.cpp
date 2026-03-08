@@ -5,9 +5,13 @@ Application::Application()
     : m_window(nullptr),
       m_clearColor(0.45f, 0.55f, 0.60f, 1.00f),
       m_showMainMenu(true),
+      m_selectedHTTPMethod(0),
       m_settings("settings.ini")
 {
     memset(m_urlBuffer, 0, URL_BUFFER_SIZE);
+    memset(m_payloadBuffer, 0, PAYLOAD_BUFFER_SIZE);
+    memset(m_paramKeyBuffer, 0, PARAM_BUFFER_SIZE);
+    memset(m_paramValueBuffer, 0, PARAM_BUFFER_SIZE);
     strcpy_s(m_urlBuffer, URL_BUFFER_SIZE, "https://api.github.com");
 }
 

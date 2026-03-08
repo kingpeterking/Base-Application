@@ -2,6 +2,7 @@
 #include "WindowFunctions/WindowFunctions.h"
 #include "Application.h"
 #include "WindowFunctions/WindowManager.h"
+#include "Tools/HTTPClient.h"
 
 WindowFunctions::WindowFunctions(Application* app)
     : m_app(app)
@@ -139,38 +140,125 @@ void WindowFunctions::RenderImPlotDemoWindow(bool* isOpen)
 
 void WindowFunctions::RenderURLRequestWindow(bool* isOpen)
 {
-    ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+    static const char* httpMethods[] = { "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS" };
+
+    ImGui::SetNextWindowSize(ImVec2(1000, 700), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("URL Request", isOpen))
     {
         ImGui::Text("HTTP Request Tool");
         ImGui::Separator();
 
+        // HTTP Method selection
+        ImGui::Text("Method:");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(100);
+        ImGui::Combo("##http_method", &m_app->m_selectedHTTPMethod, httpMethods, IM_ARRAYSIZE(httpMethods));
+
         // URL input
         ImGui::Text("URL:");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(400);
         ImGui::InputText("##url_input", m_app->m_urlBuffer, m_app->URL_BUFFER_SIZE);
 
-        ImGui::SameLine();
+        ImGui::Separator();
 
-        // Send button
-        if (ImGui::Button("Send Request") && !m_app->m_httpClient.IsLoading())
+        // Collapsible section for URL Parameters
+        if (ImGui::CollapsingHeader("URL Parameters", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            m_app->m_httpClient.PerformRequest(m_app->m_urlBuffer);
+            ImGui::Text("Add Parameter:");
+            ImGui::SetNextItemWidth(150);
+            ImGui::InputText("##param_key", m_app->m_paramKeyBuffer, m_app->PARAM_BUFFER_SIZE);
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(150);
+            ImGui::InputText("##param_value", m_app->m_paramValueBuffer, m_app->PARAM_BUFFER_SIZE);
+            ImGui::SameLine();
+            if (ImGui::Button("Add Param", ImVec2(100, 0)))
+            {
+                std::string key = m_app->m_paramKeyBuffer;
+                std::string value = m_app->m_paramValueBuffer;
+                if (!key.empty() && !value.empty())
+                {
+                    m_app->m_requestParameters[key] = value;
+                    memset(m_app->m_paramKeyBuffer, 0, m_app->PARAM_BUFFER_SIZE);
+                    memset(m_app->m_paramValueBuffer, 0, m_app->PARAM_BUFFER_SIZE);
+                }
+            }
+
+            // Display existing parameters
+            if (!m_app->m_requestParameters.empty())
+            {
+                ImGui::Text("Current Parameters:");
+                std::vector<std::string> keysToRemove;
+                for (auto& [key, value] : m_app->m_requestParameters)
+                {
+                    ImGui::BulletText("%s = %s", key.c_str(), value.c_str());
+                    ImGui::SameLine();
+                    std::string removeButtonId = "Remove##" + key;
+                    if (ImGui::SmallButton(removeButtonId.c_str()))
+                    {
+                        keysToRemove.push_back(key);
+                    }
+                }
+                for (const auto& key : keysToRemove)
+                {
+                    m_app->m_requestParameters.erase(key);
+                }
+            }
+        }
+
+        // Collapsible section for Request Payload
+        if (ImGui::CollapsingHeader("Request Payload", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::TextDisabled("(For POST, PUT, PATCH, DELETE requests)");
+            ImGui::InputTextMultiline("##payload_input", m_app->m_payloadBuffer, m_app->PAYLOAD_BUFFER_SIZE,
+                ImVec2(-1, 100), ImGuiInputTextFlags_AllowTabInput);
         }
 
         ImGui::Separator();
 
-        // Status
+        // Send button
+        if (ImGui::Button("Send Request", ImVec2(150, 0)) && !m_app->m_httpClient.IsLoading())
+        {
+            HTTPMethod method = static_cast<HTTPMethod>(m_app->m_selectedHTTPMethod);
+            std::string payload = m_app->m_payloadBuffer;
+            m_app->m_httpClient.PerformRequest(m_app->m_urlBuffer, method, payload, m_app->m_requestParameters);
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Clear All", ImVec2(100, 0)))
+        {
+            m_app->m_httpClient.ClearAll();
+            m_app->m_requestParameters.clear();
+            memset(m_app->m_payloadBuffer, 0, m_app->PAYLOAD_BUFFER_SIZE);
+        }
+
+        ImGui::Separator();
+
+        // Status and Response Code
         if (m_app->m_httpClient.IsLoading())
         {
-            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Loading...");
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "⏳ Loading...");
         }
-        else if (!m_app->m_httpClient.GetError().empty())
+        else
         {
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%s", m_app->m_httpClient.GetError().c_str());
-        }
-        else if (!m_app->m_httpClient.GetResponse().empty())
-        {
-            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Success! Response: %zu bytes", m_app->m_httpClient.GetResponse().size());
+            if (m_app->m_httpClient.WasSuccessful())
+            {
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), 
+                    "✓ Success | Status Code: %ld | Response: %zu bytes", 
+                    m_app->m_httpClient.GetStatusCode(), m_app->m_httpClient.GetResponse().size());
+            }
+            else if (m_app->m_httpClient.GetStatusCode() > 0)
+            {
+                ImGui::TextColored(ImVec4(1.0f, 0.65f, 0.0f, 1.0f), 
+                    "⚠ HTTP %ld - %s", 
+                    m_app->m_httpClient.GetStatusCode(), 
+                    m_app->m_httpClient.GetError().c_str());
+            }
+            else if (!m_app->m_httpClient.GetError().empty())
+            {
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), 
+                    "✗ Error: %s", m_app->m_httpClient.GetError().c_str());
+            }
         }
 
         ImGui::Separator();
@@ -178,7 +266,8 @@ void WindowFunctions::RenderURLRequestWindow(bool* isOpen)
 
         // Response display with scrollbar
         ImGui::BeginChild("response_scroll", ImVec2(0, -50), true, ImGuiWindowFlags_HorizontalScrollbar);
-        ImGui::TextUnformatted(m_app->m_httpClient.GetResponse().c_str(), m_app->m_httpClient.GetResponse().c_str() + m_app->m_httpClient.GetResponse().size());
+        ImGui::TextUnformatted(m_app->m_httpClient.GetResponse().c_str(), 
+            m_app->m_httpClient.GetResponse().c_str() + m_app->m_httpClient.GetResponse().size());
         ImGui::EndChild();
 
         // Copy button
@@ -188,12 +277,6 @@ void WindowFunctions::RenderURLRequestWindow(bool* isOpen)
             {
                 ImGui::SetClipboardText(m_app->m_httpClient.GetResponse().c_str());
             }
-            ImGui::SameLine();
-        }
-
-        if (ImGui::Button("Clear"))
-        {
-            m_app->m_httpClient.ClearAll();
         }
 
         ImGui::End();
