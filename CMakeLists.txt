@@ -4,6 +4,39 @@ project(ImGuiApp)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Set default build type to Release if not specified
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build (Debug or Release)" FORCE)
+endif()
+
+# Build-specific compiler flags
+if(MSVC)
+    # Visual Studio specific flags
+    if(CMAKE_BUILD_TYPE MATCHES Debug)
+        # Debug: Include debug info, no optimization, runtime checks
+        set(CMAKE_CXX_FLAGS_DEBUG "/W4 /ZI /Od /RTC1" CACHE STRING "")
+        message(STATUS "Building DEBUG configuration with full debugging support")
+    else()
+        # Release: Optimization, minimal debug info
+        set(CMAKE_CXX_FLAGS_RELEASE "/W4 /O2 /Zi" CACHE STRING "")
+        message(STATUS "Building RELEASE configuration with optimizations")
+    endif()
+else()
+    # GCC/Clang flags
+    if(CMAKE_BUILD_TYPE MATCHES Debug)
+        set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra" CACHE STRING "")
+        message(STATUS "Building DEBUG configuration with full debugging support")
+    else()
+        set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -Wall -Wextra" CACHE STRING "")
+        message(STATUS "Building RELEASE configuration with optimizations")
+    endif()
+endif()
+
+# Set output directories based on build type
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/$<CONFIG>")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/$<CONFIG>")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/$<CONFIG>")
+
 # Fetch and build dependencies
 include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
