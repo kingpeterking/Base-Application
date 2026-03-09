@@ -73,9 +73,9 @@ void WindowFunctions::RenderMainMenu(bool* isOpen)
 
         ImGui::Separator();
         ImGui::Text("Total Windows: %zu", allWindows.size() - 1); // -1 for the main menu itself
-
-        ImGui::End();
     }
+
+    ImGui::End();
 }
 
 void WindowFunctions::RenderDemoWindow(bool* isOpen)
@@ -145,9 +145,9 @@ void WindowFunctions::RenderApplicationWindow(bool* isOpen)
         ImGui::Separator();
         ImGui::Text("Performance");
         ImGui::Text("Average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-
-        ImGui::End();
     }
+
+    ImGui::End();
 }
 
 void WindowFunctions::RenderImPlotDemoWindow(bool* isOpen)
@@ -295,9 +295,9 @@ void WindowFunctions::RenderURLRequestWindow(bool* isOpen)
                 ImGui::SetClipboardText(m_app->m_httpClient.GetResponse().c_str());
             }
         }
-
-        ImGui::End();
     }
+
+    ImGui::End();
 }
 
 void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
@@ -699,9 +699,9 @@ void WindowFunctions::RenderFileExplorerWindow(bool* isOpen)
 
             ImGui::EndTable();
         }
-
-        ImGui::End();
     }
+
+    ImGui::End();
 }
 
 void WindowFunctions::RenderLogViewerWindow(bool* isOpen)
@@ -915,9 +915,9 @@ void WindowFunctions::RenderLogViewerWindow(bool* isOpen)
 
             ImGui::EndTable();
         }
-
-        ImGui::End();
     }
+
+    ImGui::End();
 }
 
 void WindowFunctions::RenderWebServerControlWindow(bool* isOpen)
@@ -1018,9 +1018,8 @@ void WindowFunctions::RenderWebServerControlWindow(bool* isOpen)
         {
             ImGui::TextDisabled("Server is not running. Click 'Start Server' to begin.");
         }
-
-        ImGui::End();
     }
+    ImGui::End();  // MUST always call End() after Begin(), regardless of return value
 }
 
 void WindowFunctions::RenderWebServerRequestsWindow(bool* isOpen)
@@ -1123,7 +1122,7 @@ void WindowFunctions::RenderWebServerRequestsWindow(bool* isOpen)
 
             ImGui::EndTable();
         }
-
-        ImGui::End();
     }
+
+    ImGui::End();
 }
