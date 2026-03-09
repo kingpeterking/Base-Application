@@ -84,11 +84,11 @@ endif()
 # SimpleIni - header-only library from Brodie Thiesfield
 # We'll create local SimpleIni headers
 
-# Dear ImGui
+# Dear ImGui (using docking branch for window docking features)
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG v1.91.0
+    GIT_TAG docking
 )
 
 # GLFW
@@ -98,11 +98,11 @@ FetchContent_Declare(
     GIT_TAG 3.3.8
 )
 
-# ImPlot
+# ImPlot (using master for compatibility with ImGui docking branch)
 FetchContent_Declare(
     implot
     GIT_REPOSITORY https://github.com/epezent/implot.git
-    GIT_TAG v0.16
+    GIT_TAG master
 )
 
 # CURL
