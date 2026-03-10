@@ -7,13 +7,34 @@ Application::Application()
       m_clearColor(0.45f, 0.55f, 0.60f, 1.00f),
       m_showMainMenu(true),
       m_selectedHTTPMethod(0),
-      m_settings("settings.ini")
+      m_settings("settings.ini"),
+      m_dbTrustedConnection(true),
+      m_dbEncrypt(false),
+      m_dbConnectionTimeout(30),
+      m_dbCommandTimeout(30),
+      m_dbSelectedConnectionMode(0),
+      m_dbConnectionStatus("Not connected")
 {
     memset(m_urlBuffer, 0, URL_BUFFER_SIZE);
     memset(m_payloadBuffer, 0, PAYLOAD_BUFFER_SIZE);
     memset(m_paramKeyBuffer, 0, PARAM_BUFFER_SIZE);
     memset(m_paramValueBuffer, 0, PARAM_BUFFER_SIZE);
     strcpy_s(m_urlBuffer, URL_BUFFER_SIZE, "https://api.github.com");
+
+    memset(m_dbDriverBuffer, 0, DB_BUFFER_SIZE);
+    memset(m_dbServerBuffer, 0, DB_BUFFER_SIZE);
+    memset(m_dbPortBuffer, 0, sizeof(m_dbPortBuffer));
+    memset(m_dbDatabaseBuffer, 0, DB_BUFFER_SIZE);
+    memset(m_dbUsernameBuffer, 0, DB_BUFFER_SIZE);
+    memset(m_dbPasswordBuffer, 0, DB_BUFFER_SIZE);
+    memset(m_dbConnectionStringBuffer, 0, sizeof(m_dbConnectionStringBuffer));
+    memset(m_dbDSNBuffer, 0, DB_BUFFER_SIZE);
+    memset(m_dbDSNUsernameBuffer, 0, DB_BUFFER_SIZE);
+    memset(m_dbDSNPasswordBuffer, 0, DB_BUFFER_SIZE);
+    strcpy_s(m_dbDriverBuffer, DB_BUFFER_SIZE, "SQL Server");
+    strcpy_s(m_dbServerBuffer, DB_BUFFER_SIZE, "localhost");
+    strcpy_s(m_dbPortBuffer, sizeof(m_dbPortBuffer), "1433");
+    strcpy_s(m_dbDatabaseBuffer, DB_BUFFER_SIZE, "master");
 }
 
 Application::~Application()
@@ -220,6 +241,10 @@ void Application::SetupWindows()
     // Setup web server requests window
     m_windowManager.AddWindow("Tools", "Web Server", "Request Monitor", 
         [this](bool* isOpen) { RenderWebServerRequestsWindow(isOpen); });
+
+    // Setup database connection window
+    m_windowManager.AddWindow("Tools", "Database", "Database Connection", 
+        [this](bool* isOpen) { RenderDatabaseConnectionWindow(isOpen); });
 }
 
 // Window rendering delegations to WindowFunctions
@@ -266,6 +291,11 @@ void Application::RenderWebServerControlWindow(bool* isOpen)
 void Application::RenderWebServerRequestsWindow(bool* isOpen)
 {
     m_windowFunctions->RenderWebServerRequestsWindow(isOpen);
+}
+
+void Application::RenderDatabaseConnectionWindow(bool* isOpen)
+{
+    m_windowFunctions->RenderDatabaseConnectionWindow(isOpen);
 }
 
 void Application::Shutdown()

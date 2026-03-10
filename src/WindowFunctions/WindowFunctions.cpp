@@ -843,7 +843,7 @@ void WindowFunctions::RenderLogViewerWindow(bool* isOpen)
             ImGui::TableSetColumnIndex(1);
 
             // Log table
-            if (ImGui::BeginTable("logs_table", 4, 
+            if (ImGui::BeginTable("logs_table", 5, 
                 ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | 
                 ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY))
             {
@@ -851,6 +851,7 @@ void WindowFunctions::RenderLogViewerWindow(bool* isOpen)
                 ImGui::TableSetupColumn("Level", ImGuiTableColumnFlags_WidthFixed, 80);
                 ImGui::TableSetupColumn("Source", ImGuiTableColumnFlags_WidthFixed, 150);
                 ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("Copy", ImGuiTableColumnFlags_WidthFixed, 50);
                 ImGui::TableSetupScrollFreeze(0, 1); // Freeze header row
                 ImGui::TableHeadersRow();
 
@@ -902,6 +903,20 @@ void WindowFunctions::RenderLogViewerWindow(bool* isOpen)
                     // Message
                     ImGui::TableSetColumnIndex(3);
                     ImGui::TextWrapped("%s", entry.message.c_str());
+
+                    // Copy button
+                    ImGui::TableSetColumnIndex(4);
+                    std::string copyButtonLabel = "📋##copy_" + std::to_string(std::hash<std::string>{}(entry.timestamp + entry.message));
+                    if (ImGui::SmallButton(copyButtonLabel.c_str()))
+                    {
+                        std::string logEntry = "[" + entry.timestamp + "] [" + std::string(levelText) + "] [" + 
+                                              entry.source + "] " + entry.message;
+                        ImGui::SetClipboardText(logEntry.c_str());
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Copy this log entry");
+                    }
                 }
 
                 // Auto-scroll to bottom
@@ -1126,3 +1141,693 @@ void WindowFunctions::RenderWebServerRequestsWindow(bool* isOpen)
 
     ImGui::End();
 }
+
+void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
+{
+    ImGui::SetNextWindowSize(ImVec2(650, 550), ImGuiCond_FirstUseEver);
+    if (!ImGui::Begin("Database Connection", isOpen))
+    {
+        ImGui::End();
+        return;
+    }
+
+    if (ImGui::BeginTabBar("ConnectionModeTabs"))
+    {
+        if (ImGui::BeginTabItem("Connection Form"))
+        {
+            m_app->m_dbSelectedConnectionMode = 0;
+
+            ImGui::Spacing();
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Database Connection Settings");
+            ImGui::Separator();
+
+            ImGui::Text("Driver:");
+            ImGui::SetNextItemWidth(400);
+            if (ImGui::BeginCombo("##driver", m_app->m_dbDriverBuffer))
+            {
+                if (m_app->m_availableDrivers.empty())
+                {
+                    m_app->m_availableDrivers = m_app->m_databaseManager.GetAvailableDrivers();
+                }
+
+                const char* commonDrivers[] = { "SQL Server", "PostgreSQL Unicode", "MySQL ODBC 8.0 Driver", 
+                                                "SQLite3 ODBC Driver", "Oracle in OraDB19Home1",
+                                                "Microsoft Access Driver (*.mdb, *.accdb)" };
+                for (const char* driver : commonDrivers)
+                {
+                    bool isSelected = (strcmp(m_app->m_dbDriverBuffer, driver) == 0);
+                    if (ImGui::Selectable(driver, isSelected))
+                    {
+                        strcpy_s(m_app->m_dbDriverBuffer, Application::DB_BUFFER_SIZE, driver);
+                    }
+                    if (isSelected)
+                        ImGui::SetItemDefaultFocus();
+                }
+
+                if (!m_app->m_availableDrivers.empty())
+                {
+                    ImGui::Separator();
+                    ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Installed Drivers:");
+                    for (const auto& driver : m_app->m_availableDrivers)
+                    {
+                        bool isSelected = (driver == m_app->m_dbDriverBuffer);
+                        if (ImGui::Selectable(driver.c_str(), isSelected))
+                        {
+                            strcpy_s(m_app->m_dbDriverBuffer, Application::DB_BUFFER_SIZE, driver.c_str());
+                        }
+                        if (isSelected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                }
+
+                ImGui::EndCombo();
+            }
+
+            ImGui::Text("Server:");
+            ImGui::SetNextItemWidth(300);
+            ImGui::InputText("##server", m_app->m_dbServerBuffer, Application::DB_BUFFER_SIZE);
+            ImGui::SameLine();
+            ImGui::Text("Port:");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(80);
+            ImGui::InputText("##port", m_app->m_dbPortBuffer, sizeof(m_app->m_dbPortBuffer));
+
+            // Show hint for MS Access
+            if (strstr(m_app->m_dbDriverBuffer, "Access") != nullptr)
+            {
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "💡 Tip:");
+                ImGui::TextWrapped("For MS Access, enter the full file path in 'Server' field (e.g., C:\\MyDatabase.accdb)");
+                ImGui::TextWrapped("Leave 'Port' and 'Database' fields empty for file-based Access databases.");
+            }
+
+            ImGui::Text("Database:");
+            ImGui::SetNextItemWidth(400);
+            ImGui::InputText("##database", m_app->m_dbDatabaseBuffer, Application::DB_BUFFER_SIZE);
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Text("Authentication:");
+
+            ImGui::Checkbox("Trusted Connection (Windows Auth)", &m_app->m_dbTrustedConnection);
+
+            if (!m_app->m_dbTrustedConnection)
+            {
+                ImGui::Text("Username:");
+                ImGui::SetNextItemWidth(400);
+                ImGui::InputText("##username", m_app->m_dbUsernameBuffer, Application::DB_BUFFER_SIZE);
+
+                ImGui::Text("Password:");
+                ImGui::SetNextItemWidth(400);
+                ImGui::InputText("##password", m_app->m_dbPasswordBuffer, Application::DB_BUFFER_SIZE, 
+                               ImGuiInputTextFlags_Password);
+            }
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Text("Options:");
+
+            ImGui::Checkbox("Encrypt Connection", &m_app->m_dbEncrypt);
+
+            ImGui::Text("Connection Timeout (seconds):");
+            ImGui::SetNextItemWidth(150);
+            ImGui::SliderInt("##conn_timeout", &m_app->m_dbConnectionTimeout, 5, 300);
+
+            ImGui::Text("Command Timeout (seconds):");
+            ImGui::SetNextItemWidth(150);
+            ImGui::SliderInt("##cmd_timeout", &m_app->m_dbCommandTimeout, 5, 300);
+
+            ImGui::Spacing();
+            ImGui::Separator();
+
+            bool isConnected = m_app->m_databaseManager.IsConnected();
+
+            if (!isConnected)
+            {
+                if (ImGui::Button("Connect", ImVec2(120, 0)))
+                {
+                    Database::ConnectionConfig config;
+                    config.DriverName = m_app->m_dbDriverBuffer;
+                    config.ServerAddress = m_app->m_dbServerBuffer;
+
+                    try {
+                        int port = std::stoi(m_app->m_dbPortBuffer);
+                        config.ServerPort = port;
+                    }
+                    catch (...) {
+                        config.ServerPort = 0;
+                    }
+
+                    config.DatabaseName = m_app->m_dbDatabaseBuffer;
+                    config.Username = m_app->m_dbUsernameBuffer;
+                    config.Password = m_app->m_dbPasswordBuffer;
+                    config.TrustedConnection = m_app->m_dbTrustedConnection;
+                    config.Encrypt = m_app->m_dbEncrypt;
+                    config.ConnectionTimeout = m_app->m_dbConnectionTimeout;
+                    config.CommandTimeout = m_app->m_dbCommandTimeout;
+
+                    if (m_app->m_databaseManager.Connect(config))
+                    {
+                        m_app->m_dbConnectionStatus = "Connected to " + 
+                            m_app->m_databaseManager.GetDatabaseProduct() + " " +
+                            m_app->m_databaseManager.GetDatabaseVersion();
+                        LOG_INFO_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                    else
+                    {
+                        m_app->m_dbConnectionStatus = "Connection failed: " + 
+                            m_app->m_databaseManager.GetLastError();
+                        LOG_ERROR_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Test Connection", ImVec2(120, 0)))
+                {
+                    Database::ConnectionConfig config;
+                    config.DriverName = m_app->m_dbDriverBuffer;
+                    config.ServerAddress = m_app->m_dbServerBuffer;
+
+                    try {
+                        int port = std::stoi(m_app->m_dbPortBuffer);
+                        config.ServerPort = port;
+                    }
+                    catch (...) {
+                        config.ServerPort = 0;
+                    }
+
+                    config.DatabaseName = m_app->m_dbDatabaseBuffer;
+                    config.Username = m_app->m_dbUsernameBuffer;
+                    config.Password = m_app->m_dbPasswordBuffer;
+                    config.TrustedConnection = m_app->m_dbTrustedConnection;
+                    config.Encrypt = m_app->m_dbEncrypt;
+                    config.ConnectionTimeout = m_app->m_dbConnectionTimeout;
+                    config.CommandTimeout = m_app->m_dbCommandTimeout;
+
+                    std::string errorMessage;
+                    if (m_app->m_databaseManager.TestConnection(config, errorMessage))
+                    {
+                        m_app->m_dbConnectionStatus = "Test successful - connection OK";
+                        LOG_INFO_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                    else
+                    {
+                        m_app->m_dbConnectionStatus = "Test failed: " + errorMessage;
+                        LOG_ERROR_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                }
+            }
+            else
+            {
+                if (ImGui::Button("Disconnect", ImVec2(120, 0)))
+                {
+                    m_app->m_databaseManager.Disconnect();
+                    m_app->m_dbConnectionStatus = "Disconnected";
+                    LOG_INFO_SRC("Database disconnected", "Database");
+                }
+
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Connected");
+
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Text("Connection Information:");
+                ImGui::BulletText("Server: %s", m_app->m_databaseManager.GetServerName().c_str());
+                ImGui::BulletText("Product: %s", m_app->m_databaseManager.GetDatabaseProduct().c_str());
+                ImGui::BulletText("Version: %s", m_app->m_databaseManager.GetDatabaseVersion().c_str());
+                ImGui::BulletText("Driver: %s %s", 
+                                m_app->m_databaseManager.GetDriverName().c_str(),
+                                m_app->m_databaseManager.GetDriverVersion().c_str());
+
+                auto db = m_app->m_databaseManager.GetDatabase();
+                if (db)
+                {
+                    ImGui::BulletText("Current Database: %s", db->GetName().c_str());
+                }
+            }
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::TextWrapped("Status: %s", m_app->m_dbConnectionStatus.c_str());
+
+            // Show generated connection string for debugging
+            ImGui::Spacing();
+            ImGui::Separator();
+            if (ImGui::CollapsingHeader("Generated Connection String (Debug)", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                Database::ConnectionConfig previewConfig;
+                previewConfig.DriverName = m_app->m_dbDriverBuffer;
+                previewConfig.ServerAddress = m_app->m_dbServerBuffer;
+
+                try {
+                    int port = std::stoi(m_app->m_dbPortBuffer);
+                    previewConfig.ServerPort = port;
+                }
+                catch (...) {
+                    previewConfig.ServerPort = 0;
+                }
+
+                previewConfig.DatabaseName = m_app->m_dbDatabaseBuffer;
+                previewConfig.Username = m_app->m_dbUsernameBuffer;
+                previewConfig.Password = "********";  // Don't show actual password
+                previewConfig.TrustedConnection = m_app->m_dbTrustedConnection;
+                previewConfig.Encrypt = m_app->m_dbEncrypt;
+                previewConfig.ConnectionTimeout = m_app->m_dbConnectionTimeout;
+                previewConfig.CommandTimeout = m_app->m_dbCommandTimeout;
+
+                std::string previewConnectionString = previewConfig.BuildConnectionString();
+
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "This is the connection string that will be used:");
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
+                ImGui::InputTextMultiline("##preview_connstring", 
+                    const_cast<char*>(previewConnectionString.c_str()), 
+                    previewConnectionString.length() + 1,
+                    ImVec2(-1, 80),
+                    ImGuiInputTextFlags_ReadOnly);
+                ImGui::PopStyleColor();
+
+                if (ImGui::Button("Copy Connection String"))
+                {
+                    ImGui::SetClipboardText(previewConnectionString.c_str());
+                }
+            }
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Connection String"))
+        {
+            m_app->m_dbSelectedConnectionMode = 1;
+
+            ImGui::Spacing();
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "ODBC Connection String");
+            ImGui::Separator();
+
+            ImGui::Text("Enter ODBC connection string:");
+            ImGui::SetNextItemWidth(-1);
+            ImGui::InputTextMultiline("##connstring", m_app->m_dbConnectionStringBuffer, 
+                                     sizeof(m_app->m_dbConnectionStringBuffer),
+                                     ImVec2(-1, 150));
+
+            ImGui::Spacing();
+            if (ImGui::CollapsingHeader("Connection String Examples"))
+            {
+                ImGui::TextWrapped("SQL Server (Windows Auth):");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), 
+                    "Driver={SQL Server};Server=localhost;Database=master;Trusted_Connection=Yes;");
+
+                ImGui::Spacing();
+                ImGui::TextWrapped("SQL Server (SQL Auth):");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), 
+                    "Driver={SQL Server};Server=localhost;Database=mydb;Uid=sa;Pwd=password;");
+
+                ImGui::Spacing();
+                ImGui::TextWrapped("Azure SQL Database:");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), 
+                    "Driver={ODBC Driver 17 for SQL Server};Server=myserver.database.windows.net;Database=mydb;Uid=username;Pwd=password;Encrypt=Yes;");
+
+                ImGui::Spacing();
+                ImGui::TextWrapped("PostgreSQL:");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), 
+                    "Driver={PostgreSQL Unicode};Server=localhost;Port=5432;Database=mydb;Uid=postgres;Pwd=password;");
+
+                ImGui::Spacing();
+                ImGui::TextWrapped("MySQL:");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), 
+                    "Driver={MySQL ODBC 8.0 Driver};Server=localhost;Database=mydb;User=root;Password=password;");
+
+                ImGui::Spacing();
+                ImGui::TextWrapped("MS Access (Local File):");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), 
+                    "Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\\MyDatabase.accdb;");
+
+                ImGui::Spacing();
+                ImGui::TextWrapped("MS Access (With Password):");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), 
+                    "Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\\MyDatabase.accdb;PWD=mypassword;");
+            }
+
+            ImGui::Spacing();
+            ImGui::Separator();
+
+            bool isConnected = m_app->m_databaseManager.IsConnected();
+
+            if (!isConnected)
+            {
+                if (ImGui::Button("Connect", ImVec2(120, 0)))
+                {
+                    if (m_app->m_databaseManager.ConnectWithConnectionString(m_app->m_dbConnectionStringBuffer))
+                    {
+                        m_app->m_dbConnectionStatus = "Connected to " + 
+                            m_app->m_databaseManager.GetDatabaseProduct() + " " +
+                            m_app->m_databaseManager.GetDatabaseVersion();
+                        LOG_INFO_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                    else
+                    {
+                        m_app->m_dbConnectionStatus = "Connection failed: " + 
+                            m_app->m_databaseManager.GetLastError();
+                        LOG_ERROR_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Test Connection", ImVec2(120, 0)))
+                {
+                    std::string errorMessage;
+                    if (m_app->m_databaseManager.TestConnectionString(m_app->m_dbConnectionStringBuffer, errorMessage))
+                    {
+                        m_app->m_dbConnectionStatus = "Test successful - connection OK";
+                        LOG_INFO_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                    else
+                    {
+                        m_app->m_dbConnectionStatus = "Test failed: " + errorMessage;
+                        LOG_ERROR_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                }
+            }
+            else
+            {
+                if (ImGui::Button("Disconnect", ImVec2(120, 0)))
+                {
+                    m_app->m_databaseManager.Disconnect();
+                    m_app->m_dbConnectionStatus = "Disconnected";
+                    LOG_INFO_SRC("Database disconnected", "Database");
+                }
+
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Connected");
+            }
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::TextWrapped("Status: %s", m_app->m_dbConnectionStatus.c_str());
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Quick Connect"))
+        {
+            ImGui::Spacing();
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Quick Connection Presets");
+            ImGui::Separator();
+
+            ImGui::TextWrapped("Select a preset to quickly connect to common database configurations:");
+            ImGui::Spacing();
+
+            if (ImGui::Button("Local SQL Server (Windows Auth)", ImVec2(300, 0)))
+            {
+                strcpy_s(m_app->m_dbDriverBuffer, Application::DB_BUFFER_SIZE, "SQL Server");
+                strcpy_s(m_app->m_dbServerBuffer, Application::DB_BUFFER_SIZE, "localhost");
+                strcpy_s(m_app->m_dbPortBuffer, sizeof(m_app->m_dbPortBuffer), "1433");
+                strcpy_s(m_app->m_dbDatabaseBuffer, Application::DB_BUFFER_SIZE, "master");
+                m_app->m_dbTrustedConnection = true;
+                m_app->m_dbEncrypt = false;
+                m_app->m_dbSelectedConnectionMode = 0;
+            }
+            ImGui::SameLine();
+            ImGui::TextDisabled("SQL Server with Windows authentication");
+
+            if (ImGui::Button("Local PostgreSQL", ImVec2(300, 0)))
+            {
+                strcpy_s(m_app->m_dbDriverBuffer, Application::DB_BUFFER_SIZE, "PostgreSQL Unicode");
+                strcpy_s(m_app->m_dbServerBuffer, Application::DB_BUFFER_SIZE, "localhost");
+                strcpy_s(m_app->m_dbPortBuffer, sizeof(m_app->m_dbPortBuffer), "5432");
+                strcpy_s(m_app->m_dbDatabaseBuffer, Application::DB_BUFFER_SIZE, "postgres");
+                strcpy_s(m_app->m_dbUsernameBuffer, Application::DB_BUFFER_SIZE, "postgres");
+                m_app->m_dbTrustedConnection = false;
+                m_app->m_dbEncrypt = false;
+                m_app->m_dbSelectedConnectionMode = 0;
+            }
+            ImGui::SameLine();
+            ImGui::TextDisabled("PostgreSQL default configuration");
+
+            if (ImGui::Button("Local MySQL", ImVec2(300, 0)))
+            {
+                strcpy_s(m_app->m_dbDriverBuffer, Application::DB_BUFFER_SIZE, "MySQL ODBC 8.0 Driver");
+                strcpy_s(m_app->m_dbServerBuffer, Application::DB_BUFFER_SIZE, "localhost");
+                strcpy_s(m_app->m_dbPortBuffer, sizeof(m_app->m_dbPortBuffer), "3306");
+                strcpy_s(m_app->m_dbDatabaseBuffer, Application::DB_BUFFER_SIZE, "mysql");
+                strcpy_s(m_app->m_dbUsernameBuffer, Application::DB_BUFFER_SIZE, "root");
+                m_app->m_dbTrustedConnection = false;
+                m_app->m_dbEncrypt = false;
+                m_app->m_dbSelectedConnectionMode = 0;
+            }
+            ImGui::SameLine();
+            ImGui::TextDisabled("MySQL default configuration");
+
+            if (ImGui::Button("Azure SQL Database", ImVec2(300, 0)))
+            {
+                strcpy_s(m_app->m_dbDriverBuffer, Application::DB_BUFFER_SIZE, "ODBC Driver 17 for SQL Server");
+                strcpy_s(m_app->m_dbServerBuffer, Application::DB_BUFFER_SIZE, "myserver.database.windows.net");
+                strcpy_s(m_app->m_dbPortBuffer, sizeof(m_app->m_dbPortBuffer), "1433");
+                strcpy_s(m_app->m_dbDatabaseBuffer, Application::DB_BUFFER_SIZE, "mydb");
+                m_app->m_dbTrustedConnection = false;
+                m_app->m_dbEncrypt = true;
+                m_app->m_dbSelectedConnectionMode = 0;
+            }
+            ImGui::SameLine();
+            ImGui::TextDisabled("Azure SQL with encryption");
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), 
+                "After selecting a preset, switch to 'Connection Form' tab to customize and connect.");
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("DSN"))
+        {
+            m_app->m_dbSelectedConnectionMode = 2;
+
+            ImGui::Spacing();
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Data Source Name (DSN) Connection");
+            ImGui::Separator();
+
+            // Show application architecture
+            ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "Application Architecture:");
+            #if defined(_WIN64)
+                ImGui::SameLine();
+                ImGui::Text("64-bit");
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "💡 Use 64-bit ODBC Administrator: odbcad32.exe");
+            #elif defined(_WIN32)
+                ImGui::SameLine();
+                ImGui::Text("32-bit");
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "💡 Use 32-bit ODBC Administrator: C:\\Windows\\SysWOW64\\odbcad32.exe");
+            #else
+                ImGui::SameLine();
+                ImGui::Text("Unknown");
+            #endif
+            ImGui::Separator();
+
+            ImGui::TextWrapped("Connect using a DSN configured in Windows ODBC Data Source Administrator.");
+            ImGui::Spacing();
+
+            ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "How to create a DSN:");
+            ImGui::BulletText("Open 'ODBC Data Sources' from Windows Start menu");
+            ImGui::BulletText("Choose 'User DSN' or 'System DSN' tab");
+            ImGui::BulletText("Click 'Add' and select your driver");
+            ImGui::BulletText("Configure your connection and give it a name");
+            ImGui::BulletText("Click 'OK' to save");
+
+            ImGui::Spacing();
+            ImGui::Separator();
+
+            ImGui::Text("DSN Name:");
+            ImGui::SetNextItemWidth(400);
+            ImGui::InputText("##dsn_name", m_app->m_dbDSNBuffer, Application::DB_BUFFER_SIZE);
+            ImGui::SameLine();
+            ImGui::TextDisabled("(Name you gave to the DSN)");
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Text("Optional Credentials:");
+            ImGui::TextDisabled("(Only needed if DSN doesn't store credentials)");
+
+            ImGui::Text("Username:");
+            ImGui::SetNextItemWidth(400);
+            ImGui::InputText("##dsn_username", m_app->m_dbDSNUsernameBuffer, Application::DB_BUFFER_SIZE);
+
+            ImGui::Text("Password:");
+            ImGui::SetNextItemWidth(400);
+            ImGui::InputText("##dsn_password", m_app->m_dbDSNPasswordBuffer, Application::DB_BUFFER_SIZE,
+                           ImGuiInputTextFlags_Password);
+
+            ImGui::Spacing();
+            ImGui::Separator();
+
+            bool isConnected = m_app->m_databaseManager.IsConnected();
+
+            if (!isConnected)
+            {
+                if (ImGui::Button("Connect", ImVec2(120, 0)))
+                {
+                    // Build DSN connection string
+                    std::string dsnConnectionString = "DSN=" + std::string(m_app->m_dbDSNBuffer) + ";";
+
+                    if (strlen(m_app->m_dbDSNUsernameBuffer) > 0)
+                    {
+                        dsnConnectionString += "Uid=" + std::string(m_app->m_dbDSNUsernameBuffer) + ";";
+                    }
+                    if (strlen(m_app->m_dbDSNPasswordBuffer) > 0)
+                    {
+                        dsnConnectionString += "Pwd=" + std::string(m_app->m_dbDSNPasswordBuffer) + ";";
+                    }
+
+                    LOG_INFO_SRC("Attempting DSN connection: " + dsnConnectionString, "Database");
+
+                    if (m_app->m_databaseManager.ConnectWithConnectionString(dsnConnectionString))
+                    {
+                        m_app->m_dbConnectionStatus = "Connected via DSN to " + 
+                            m_app->m_databaseManager.GetDatabaseProduct() + " " +
+                            m_app->m_databaseManager.GetDatabaseVersion();
+                        LOG_INFO_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                    else
+                    {
+                        m_app->m_dbConnectionStatus = "DSN connection failed: " + 
+                            m_app->m_databaseManager.GetLastError();
+                        LOG_ERROR_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Test Connection", ImVec2(120, 0)))
+                {
+                    // Build DSN connection string
+                    std::string dsnConnectionString = "DSN=" + std::string(m_app->m_dbDSNBuffer) + ";";
+
+                    if (strlen(m_app->m_dbDSNUsernameBuffer) > 0)
+                    {
+                        dsnConnectionString += "Uid=" + std::string(m_app->m_dbDSNUsernameBuffer) + ";";
+                    }
+                    if (strlen(m_app->m_dbDSNPasswordBuffer) > 0)
+                    {
+                        dsnConnectionString += "Pwd=" + std::string(m_app->m_dbDSNPasswordBuffer) + ";";
+                    }
+
+                    std::string errorMessage;
+                    if (m_app->m_databaseManager.TestConnectionString(dsnConnectionString, errorMessage))
+                    {
+                        m_app->m_dbConnectionStatus = "DSN test successful - connection OK";
+                        LOG_INFO_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                    else
+                    {
+                        m_app->m_dbConnectionStatus = "DSN test failed: " + errorMessage;
+                        LOG_ERROR_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                }
+            }
+            else
+            {
+                if (ImGui::Button("Disconnect", ImVec2(120, 0)))
+                {
+                    m_app->m_databaseManager.Disconnect();
+                    m_app->m_dbConnectionStatus = "Disconnected";
+                    LOG_INFO_SRC("Database disconnected", "Database");
+                }
+
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Connected");
+            }
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::TextWrapped("Status: %s", m_app->m_dbConnectionStatus.c_str());
+
+            // Show generated DSN connection string
+            ImGui::Spacing();
+            ImGui::Separator();
+            if (ImGui::CollapsingHeader("Generated DSN Connection String (Debug)", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                std::string dsnPreviewString = "DSN=" + std::string(m_app->m_dbDSNBuffer) + ";";
+                if (strlen(m_app->m_dbDSNUsernameBuffer) > 0)
+                {
+                    dsnPreviewString += "Uid=" + std::string(m_app->m_dbDSNUsernameBuffer) + ";";
+                }
+                if (strlen(m_app->m_dbDSNPasswordBuffer) > 0)
+                {
+                    dsnPreviewString += "Pwd=********;";
+                }
+
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "This is the DSN connection string that will be used:");
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
+                ImGui::InputTextMultiline("##preview_dsn_connstring", 
+                    const_cast<char*>(dsnPreviewString.c_str()), 
+                    dsnPreviewString.length() + 1,
+                    ImVec2(-1, 60),
+                    ImGuiInputTextFlags_ReadOnly);
+                ImGui::PopStyleColor();
+
+                if (ImGui::Button("Copy DSN Connection String"))
+                {
+                    ImGui::SetClipboardText(dsnPreviewString.c_str());
+                }
+            }
+
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
+    }
+
+    bool isConnected = m_app->m_databaseManager.IsConnected();
+    if (isConnected)
+    {
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Connection Information:");
+
+        if (ImGui::BeginTable("connection_info", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+        {
+            ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 150);
+            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableHeadersRow();
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("Server");
+            ImGui::TableSetColumnIndex(1);
+            ImGui::TextUnformatted(m_app->m_databaseManager.GetServerName().c_str());
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("Database Product");
+            ImGui::TableSetColumnIndex(1);
+            ImGui::TextUnformatted(m_app->m_databaseManager.GetDatabaseProduct().c_str());
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("Product Version");
+            ImGui::TableSetColumnIndex(1);
+            ImGui::TextUnformatted(m_app->m_databaseManager.GetDatabaseVersion().c_str());
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("Driver Name");
+            ImGui::TableSetColumnIndex(1);
+            ImGui::TextUnformatted(m_app->m_databaseManager.GetDriverName().c_str());
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("Driver Version");
+            ImGui::TableSetColumnIndex(1);
+            ImGui::TextUnformatted(m_app->m_databaseManager.GetDriverVersion().c_str());
+
+            auto db = m_app->m_databaseManager.GetDatabase();
+            if (db)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("Current Database");
+                ImGui::TableSetColumnIndex(1);
+                ImGui::TextUnformatted(db->GetName().c_str());
+            }
+
+            ImGui::EndTable();
+        }
+    }
+
+    ImGui::End();
+}
+
+

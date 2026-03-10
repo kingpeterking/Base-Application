@@ -33,12 +33,21 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 - ✅ **Self-contained** - No external dependencies to install
 - ✅ **Application Class Architecture** - Clean, extensible design
 - ✅ **Cross-Platform OpenGL** - Smooth rendering across Windows, macOS, and Linux
+- ✅ **Database Connectivity** - Full ODBC support with nanodbc
+  - Microsoft SQL Server, MySQL, PostgreSQL, SQLite, and more
+  - **MS Access Database Support** (.mdb and .accdb files)
+  - Connection Form, Connection String, DSN, and Quick Connect modes
+  - Connection string preview and debugging
+  - Architecture detection (32-bit/64-bit) with helpful hints
+- ✅ **Log Viewer** - Comprehensive logging system with copy-to-clipboard functionality
+- ✅ **64-bit Build Script** - Automated 64-bit builds for Windows with incremental compilation
 
 ## Project Structure
 
 ```
 Base-Application/
 ├── CMakeLists.txt                      # Build configuration
+├── build-x64.bat                       # Windows 64-bit build script (incremental/clean)
 ├── include/
 │   ├── Application.h                   # Main application class
 │   ├── pch.h                           # Precompiled headers
@@ -47,6 +56,12 @@ Base-Application/
 │   │   ├── SimpleIni.h                 # INI file parser
 │   │   ├── ImPlotClient.h              # ImPlot visualization wrapper
 │   │   ├── FileSystem.h                # Cross-platform file operations
+│   │   ├── Logger.h                    # Logging system with severity levels
+│   │   ├── Database/                   # Database connectivity
+│   │   │   ├── Database.h              # Core ODBC database interface
+│   │   │   ├── DatabaseManager.h       # Database connection management
+│   │   │   ├── Table.h                 # Table metadata and operations
+│   │   │   └── Field.h                 # Field/column metadata
 │   │   └── Web/
 │   │       └── HTTPClient.h            # HTTP/HTTPS client with REST support
 │   └── WindowFunctions/
@@ -62,12 +77,22 @@ Base-Application/
 │   │   ├── Settings.cpp                # Settings implementation
 │   │   ├── ImPlotClient.cpp            # ImPlot wrapper implementation
 │   │   ├── FileSystem.cpp              # File system implementation
+│   │   ├── Logger.cpp                  # Logger implementation
+│   │   ├── Database/                   # Database implementation
+│   │   │   ├── Database.cpp            # Core ODBC database logic
+│   │   │   ├── DatabaseManager.cpp     # Connection and query management
+│   │   │   ├── Table.cpp               # Table operations
+│   │   │   └── Field.cpp               # Field operations
 │   │   └── Web/
 │   │       └── HTTPClient.cpp          # HTTP client implementation
 │   └── WindowFunctions/
 │       ├── WindowFunction.cpp          # Window function implementation
 │       ├── WindowManager.cpp           # Window manager implementation
 │       └── WindowFunctions.cpp         # Window rendering implementations
+├── docs/
+│   ├── DATABASE_SYSTEM.md              # Database system documentation
+│   ├── DATABASE_CONNECTION_WINDOW.md   # Connection UI guide
+│   └── MS_ACCESS_SUPPORT.md            # MS Access database setup guide
 ├── .gitignore                          # Git ignore rules
 ├── README.md                           # This file
 ├── SETTINGS_GUIDE.md                   # Settings usage documentation
@@ -165,7 +190,18 @@ sudo pacman -S mesa openssl
 
 ### Configure and Build
 
-#### Windows (Visual Studio)
+#### Windows (Visual Studio) - 64-bit Recommended
+
+**Using the automated build script (easiest):**
+```sh
+# Fast incremental build (5-30 seconds)
+build-x64.bat
+
+# Full clean rebuild (2-5 minutes, when needed)
+build-x64.bat clean
+```
+
+**Manual build:**
 ```sh
 mkdir build
 cd build
@@ -173,6 +209,8 @@ cmake ..
 cmake --build . --config Debug     # For Debug build
 cmake --build . --config Release   # For Release (optimized) build
 ```
+
+**Note:** For 64-bit ODBC database drivers (MS Access, SQL Server, etc.), use `build-x64.bat` or the "x64 Native Tools Command Prompt for VS". See [MS Access Support](docs/MS_ACCESS_SUPPORT.md) for architecture details.
 
 #### macOS / Linux
 
@@ -259,6 +297,8 @@ The application uses a modular WindowFunction/WindowManager architecture:
   - Plot Demo - Data visualization with ImPlot
   - URL Request - HTTP/HTTPS client tool
   - File Explorer - Directory browser with file filtering and details
+  - Log Viewer - Application logs with severity filtering and copy-to-clipboard
+  - Database Connection - ODBC database connection manager with MS Access support
 
 All window visibility settings are persisted across application runs.
 
@@ -407,6 +447,26 @@ The application includes six example windows:
 - Settings persistence: saves last directory and filter to ini file
 - Automatically loads saved settings on next launch
 
+**7. RenderLogViewerWindow()**
+- Application logging system with severity levels (Info, Warning, Error)
+- Sortable table view with timestamps
+- Severity-based filtering
+- Copy-to-clipboard for individual log entries (📋 button)
+- Auto-scroll to newest entries
+
+**8. RenderDatabaseConnectionWindow()**
+- Comprehensive ODBC database connection manager
+- Four connection modes:
+  1. **Connection Form** - Visual form with driver selection and parameters
+  2. **Connection String** - Direct connection string input with examples
+  3. **Quick Connect** - Pre-configured buttons for common databases (SQL Server, MySQL, PostgreSQL, SQLite, MS Access)
+  4. **DSN** - Connect via Windows ODBC Data Source Names
+- Connection string preview for debugging
+- Architecture detection (32-bit/64-bit) with helpful hints
+- Test connection before connecting
+- Connection information display
+- Built-in examples for all major databases
+
 ## Tools Architecture
 
 The `Tools` folder contains reusable service classes:
@@ -471,6 +531,92 @@ Settings settings("app.ini");
 settings.SetFloat("Display", "Volume", 0.8f);
 float volume = settings.GetFloat("Display", "Volume", 0.5f);
 settings.Save();
+```
+
+## Database Connectivity
+
+The application includes a complete ODBC database connectivity system built with **nanodbc**, supporting all major databases through standard ODBC drivers.
+
+### Supported Databases
+- ✅ **Microsoft SQL Server** - Enterprise database with full feature support
+- ✅ **MySQL** - Popular open-source database
+- ✅ **PostgreSQL** - Advanced open-source database
+- ✅ **SQLite** - Lightweight embedded database
+- ✅ **Microsoft Access** - File-based databases (.mdb and .accdb)
+- ✅ **Oracle** - Enterprise Oracle databases
+- ✅ **Any ODBC-compliant database**
+
+### Connection Methods
+
+**1. Connection Form** - Visual interface with driver selection
+**2. Connection String** - Direct connection string input with built-in examples
+**3. Quick Connect** - Pre-configured buttons for common databases
+**4. DSN** - Use Windows ODBC Data Source Names
+
+### MS Access Database Support
+
+The application provides comprehensive support for Microsoft Access databases:
+- **DBQ parameter support** - Automatically uses correct file path format
+- **Context-sensitive hints** - Helpful tips for file-based connections
+- **Quick connect preset** - One-click setup for Access databases
+- **Connection string examples** - With and without passwords
+- **Architecture detection** - Shows 32-bit/64-bit with ODBC driver hints
+
+For detailed MS Access setup and usage, see [MS Access Support Documentation](docs/MS_ACCESS_SUPPORT.md).
+
+### Database Features
+
+Once connected, you can:
+- ✅ Execute SQL queries (SELECT, INSERT, UPDATE, DELETE)
+- ✅ Browse database schemas and tables
+- ✅ View table metadata and structure
+- ✅ Display query results in scrollable tables
+- ✅ Transaction support
+- ✅ Connection information and diagnostics
+
+### Quick Start Example
+
+```cpp
+// Using DatabaseManager
+Database::ConnectionConfig config;
+config.DriverName = "SQL Server";
+config.ServerAddress = "localhost";
+config.ServerPort = 1433;
+config.DatabaseName = "MyDatabase";
+config.Username = "sa";
+config.Password = "password";
+
+m_databaseManager.Connect(config);
+if (m_databaseManager.IsConnected()) {
+    // Execute query
+    auto results = m_databaseManager.ExecuteQuery("SELECT * FROM Users");
+}
+```
+
+### Documentation
+- **[Database System Overview](docs/DATABASE_SYSTEM.md)** - Architecture and API reference
+- **[Database Connection Window](docs/DATABASE_CONNECTION_WINDOW.md)** - UI guide for connection management
+- **[MS Access Support](docs/MS_ACCESS_SUPPORT.md)** - Complete guide for Access databases
+
+## Logging System
+
+The application includes a comprehensive logging system with visual log viewer:
+
+### Features
+- **Multiple severity levels** - Info, Warning, Error
+- **Timestamp tracking** - Precise time for each log entry
+- **Sortable table view** - Click column headers to sort
+- **Severity filtering** - Show/hide by log level
+- **Copy to clipboard** - 📋 button on each log entry copies formatted text
+- **Auto-scroll** - Automatically follows newest entries
+- **Persistent display** - Accessible via Tools > Log Viewer menu
+
+### Usage in Code
+```cpp
+// Log messages with different severity levels
+m_logger.LogInfo("Application started successfully");
+m_logger.LogWarning("Configuration file not found, using defaults");
+m_logger.LogError("Failed to connect to database: " + error);
 ```
 
 ## Adding Custom Tools
@@ -602,6 +748,7 @@ All dependencies are automatically fetched and built by CMake:
 - **OpenGL** 3.2 - Rendering API
 - **ImPlot** v0.16 - Professional data visualization
 - **libcurl** v8.5.0 - HTTP/HTTPS networking
+- **nanodbc** v2.14.0 - Cross-platform ODBC wrapper for database connectivity
 - **SimpleIni** - INI file parser (bundled)
 
 No pre-installation required!
@@ -649,6 +796,9 @@ Comprehensive documentation is available in the following guides:
 - **[WINDOW_MANAGER_GUIDE.md](WINDOW_MANAGER_GUIDE.md)** - Window system architecture and usage
 - **[FILESYSTEM_GUIDE.md](FILESYSTEM_GUIDE.md)** - File system API and File Explorer usage
 - **[FILESYSTEM_IMPLEMENTATION.md](FILESYSTEM_IMPLEMENTATION.md)** - Technical implementation details
+- **[Database System Overview](docs/DATABASE_SYSTEM.md)** - Complete database architecture and API
+- **[Database Connection Window](docs/DATABASE_CONNECTION_WINDOW.md)** - Database UI guide
+- **[MS Access Support](docs/MS_ACCESS_SUPPORT.md)** - Microsoft Access database setup and usage
 
 ## Troubleshooting
 

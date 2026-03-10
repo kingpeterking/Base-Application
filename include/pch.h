@@ -45,6 +45,18 @@
 // CURL
 #include <curl/curl.h>
 
+// ODBC constants (needed before nanodbc)
+#ifdef _WIN32
+    #include <sql.h>
+    #include <sqlext.h>
+#else
+    #include <sql.h>
+    #include <sqlext.h>
+#endif
+
+// nanodbc (ODBC database access)
+#include <nanodbc/nanodbc.h>
+
 // Custom OpenGL function wrappers
 #include "WindowFunctions/OpenGLFunctions.h"
 
@@ -52,6 +64,10 @@
 #include "Tools/Web/HTTPClient.h"
 #include "Tools/ImPlotClient.h"
 #include "Tools/FileSystem.h"
+#include "Tools/Database/Field.h"
+#include "Tools/Database/Table.h"
+#include "Tools/Database/Database.h"
+#include "Tools/Database/DatabaseManager.h"
 
 // Forward declaration for WindowFunctions
 class WindowFunctions;

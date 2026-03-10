@@ -35,6 +35,7 @@ private:
     void RenderLogViewerWindow(bool* isOpen);
     void RenderWebServerControlWindow(bool* isOpen);
     void RenderWebServerRequestsWindow(bool* isOpen);
+    void RenderDatabaseConnectionWindow(bool* isOpen);
 
     GLFWwindow* m_window;
     ImVec4 m_clearColor;
@@ -45,6 +46,7 @@ private:
     WebServer m_webServer;
     ImPlotClient m_implotClient;
     std::unique_ptr<WindowFunctions> m_windowFunctions;
+    Database::DatabaseManager m_databaseManager;
 
     // URL Request state
     static constexpr size_t URL_BUFFER_SIZE = 512;
@@ -56,6 +58,26 @@ private:
     char m_paramValueBuffer[PARAM_BUFFER_SIZE];
     int m_selectedHTTPMethod;
     std::map<std::string, std::string> m_requestParameters;
+
+    // Database connection state
+    static constexpr size_t DB_BUFFER_SIZE = 256;
+    char m_dbDriverBuffer[DB_BUFFER_SIZE];
+    char m_dbServerBuffer[DB_BUFFER_SIZE];
+    char m_dbPortBuffer[16];
+    char m_dbDatabaseBuffer[DB_BUFFER_SIZE];
+    char m_dbUsernameBuffer[DB_BUFFER_SIZE];
+    char m_dbPasswordBuffer[DB_BUFFER_SIZE];
+    char m_dbConnectionStringBuffer[1024];
+    char m_dbDSNBuffer[DB_BUFFER_SIZE];  // DSN name
+    char m_dbDSNUsernameBuffer[DB_BUFFER_SIZE];  // Optional DSN credentials
+    char m_dbDSNPasswordBuffer[DB_BUFFER_SIZE];  // Optional DSN credentials
+    bool m_dbTrustedConnection;
+    bool m_dbEncrypt;
+    int m_dbConnectionTimeout;
+    int m_dbCommandTimeout;
+    int m_dbSelectedConnectionMode; // 0 = Form, 1 = Connection String, 2 = DSN
+    std::string m_dbConnectionStatus;
+    std::vector<std::string> m_availableDrivers;
 
     // Window management
     WindowManager m_windowManager;

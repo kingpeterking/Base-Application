@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 project(ImGuiApp)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -11,20 +11,16 @@ endif()
 
 # MSVC Runtime Library Configuration
 if(MSVC)
-    # Use dynamic runtime library for both Debug and Release
-    # This prevents linker issues with runtime symbols
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:Debug>")
-
     # Set warning level and optimization flags
     add_compile_options(/W4 /EHsc)
 
     if(CMAKE_BUILD_TYPE MATCHES Debug)
-        # Debug: No optimization, full debugging, runtime checks
-        add_compile_options(/Od /RTC1 /ZI)
+        # Debug: No optimization, full debugging, runtime checks, dynamic runtime
+        add_compile_options(/Od /ZI /MDd)
         message(STATUS "Building DEBUG configuration with full debugging support")
     else()
-        # Release: Optimization, minimal debug info
-        add_compile_options(/O2 /Zi)
+        # Release: Optimization, minimal debug info, dynamic runtime
+        add_compile_options(/O2 /Zi /MD)
         message(STATUS "Building RELEASE configuration with optimizations")
     endif()
 else()
@@ -59,6 +55,7 @@ set(BUILD_CURL_EXE OFF CACHE BOOL "Build curl executable" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "Build CURL tests" FORCE)
 set(ENABLE_CURLDEBUG OFF CACHE BOOL "Disable CURL debug" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static library" FORCE)
+set(CURL_STATIC_CRT OFF CACHE BOOL "Use dynamic runtime library" FORCE)
 
 # Platform-specific SSL/TLS backend configuration
 if(WIN32)
@@ -119,8 +116,20 @@ FetchContent_Declare(
     GIT_TAG v0.15.3
 )
 
+# nanodbc (ODBC C++ wrapper library)
+set(NANODBC_DISABLE_EXAMPLES ON CACHE BOOL "Disable nanodbc examples" FORCE)
+set(NANODBC_DISABLE_TESTS ON CACHE BOOL "Disable nanodbc tests" FORCE)
+set(NANODBC_DISABLE_INSTALL ON CACHE BOOL "Disable nanodbc install" FORCE)
+set(CMAKE_POLICY_DEFAULT_CMP0000 NEW CACHE STRING "Set policy for nanodbc" FORCE)
+FetchContent_Declare(
+    nanodbc
+    GIT_REPOSITORY https://github.com/nanodbc/nanodbc.git
+    GIT_TAG main
+    PATCH_COMMAND ${CMAKE_COMMAND} -E echo "Patching nanodbc CMakeLists.txt"
+)
+
 # Make dependencies available
-FetchContent_MakeAvailable(imgui glfw implot curl httplib)
+FetchContent_MakeAvailable(imgui glfw implot curl httplib nanodbc)
 
 # Find OpenGL
 find_package(OpenGL REQUIRED)
@@ -139,6 +148,10 @@ add_executable(ImGuiApp
     src/Tools/ImPlotClient.cpp
     src/Tools/FileSystem.cpp
     src/WindowFunctions/WindowFunctions.cpp
+    src/Tools/Database/DatabaseManager.cpp
+    src/Tools/Database/Database.cpp
+    src/Tools/Database/Table.cpp
+    src/Tools/Database/Field.cpp
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_demo.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
@@ -160,6 +173,7 @@ target_include_directories(ImGuiApp PRIVATE
     ${implot_SOURCE_DIR}
     ${curl_SOURCE_DIR}/include
     ${httplib_SOURCE_DIR}
+    ${nanodbc_SOURCE_DIR}
 )
 
 # Enable precompiled headers
@@ -178,18 +192,25 @@ if(WIN32)
         shell32
         glfw
         libcurl
+        nanodbc
+        odbc32
     )
 elseif(APPLE)
     target_link_libraries(ImGuiApp PRIVATE
         OpenGL::OpenGL
         glfw
         libcurl
+        nanodbc
+        "-framework CoreFoundation"
+        iodbc
     )
 else()
     target_link_libraries(ImGuiApp PRIVATE
         OpenGL::OpenGL
         glfw
         libcurl
+        nanodbc
+        odbc
     )
 endif()
 
