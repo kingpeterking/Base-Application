@@ -106,28 +106,16 @@ Base-Application/
 │   ├── DATABASE_CONNECTION_WINDOW.md   # Connection UI guide
 │   ├── DatabaseSchemaViewing.md        # Schema viewer documentation
 │   ├── DatabaseInspectionWindows.md    # Object inspector guide
-│   └── MS_ACCESS_SUPPORT.md            # MS Access database setup guide
+│   ├── MS_ACCESS_SUPPORT.md            # MS Access database setup guide
+│   ├── BUILD_GUIDE.md                  # Build instructions and requirements
+│   ├── SETTINGS_GUIDE.md               # Settings usage documentation
+│   ├── WINDOW_MANAGER_GUIDE.md         # Window management documentation
+│   ├── FILESYSTEM_GUIDE.md             # File system and explorer documentation
+│   ├── FILESYSTEM_IMPLEMENTATION.md    # File system implementation details
+│   └── IMPLEMENTATION_SUMMARY.md       # Overall implementation summary
 ├── .gitignore                          # Git ignore rules
 ├── README.md                           # This file
-├── SETTINGS_GUIDE.md                   # Settings usage documentation
-├── WINDOW_MANAGER_GUIDE.md             # Window management documentation
-├── FILESYSTEM_GUIDE.md                 # File system and explorer documentation
-├── FILESYSTEM_IMPLEMENTATION.md        # Implementation details
-└── IMPLEMENTATION_SUMMARY.md           # Implementation summary
-```
-│   ├── Tools/
-│   │   ├── Settings.cpp                # Settings implementation
-│   │   ├── HTTPClient.cpp              # HTTP client implementation
-│   │   └── ImPlotClient.cpp            # ImPlot wrapper implementation
-│   └── WindowFunctions/
-│       ├── WindowFunction.cpp          # Window function implementation
-│       ├── WindowManager.cpp           # Window manager implementation
-│       └── WindowFunctions.cpp         # Window rendering implementations
-├── .gitignore                          # Git ignore rules
-├── README.md                           # This file
-├── SETTINGS_GUIDE.md                   # Settings usage documentation
-├── WINDOW_MANAGER_GUIDE.md             # Window management documentation
-└── IMPLEMENTATION_SUMMARY.md           # Implementation details
+└── CHANGELOG.md                        # Version history and changes
 ```
 
 ## Architecture
