@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Application.h"
 #include "Tools/Logger.h"
+#include <chrono>
+#include <ctime>
 
 Application::Application()
     : m_window(nullptr),
@@ -8,6 +10,7 @@ Application::Application()
       m_showMainMenu(true),
       m_selectedHTTPMethod(0),
       m_settings("settings.ini"),
+      m_activeConnectionIndex(-1), // No active connection initially
       m_dbTrustedConnection(true),
       m_dbEncrypt(false),
       m_dbConnectionTimeout(30),
@@ -21,6 +24,7 @@ Application::Application()
     memset(m_paramValueBuffer, 0, PARAM_BUFFER_SIZE);
     strcpy_s(m_urlBuffer, URL_BUFFER_SIZE, "https://api.github.com");
 
+    memset(m_dbConnectionNameBuffer, 0, DB_BUFFER_SIZE);
     memset(m_dbDriverBuffer, 0, DB_BUFFER_SIZE);
     memset(m_dbServerBuffer, 0, DB_BUFFER_SIZE);
     memset(m_dbPortBuffer, 0, sizeof(m_dbPortBuffer));
@@ -245,6 +249,10 @@ void Application::SetupWindows()
     // Setup database connection window
     m_windowManager.AddWindow("Tools", "Database", "Database Connection", 
         [this](bool* isOpen) { RenderDatabaseConnectionWindow(isOpen); });
+
+    // Setup database connections manager window
+    m_windowManager.AddWindow("Tools", "Database", "Connections Manager", 
+        [this](bool* isOpen) { RenderDatabaseConnectionsManagerWindow(isOpen); });
 }
 
 // Window rendering delegations to WindowFunctions
@@ -296,6 +304,11 @@ void Application::RenderWebServerRequestsWindow(bool* isOpen)
 void Application::RenderDatabaseConnectionWindow(bool* isOpen)
 {
     m_windowFunctions->RenderDatabaseConnectionWindow(isOpen);
+}
+
+void Application::RenderDatabaseConnectionsManagerWindow(bool* isOpen)
+{
+    m_windowFunctions->RenderDatabaseConnectionsManagerWindow(isOpen);
 }
 
 void Application::Shutdown()
@@ -372,6 +385,9 @@ void Application::LoadSettings()
     {
         fileExplorerWindow->SetEnabled(m_settings.GetBool("Windows", "ShowFileExplorer", false));
     }
+
+    // Load connection history
+    LoadConnectionHistory();
 }
 
 void Application::SaveSettings()
@@ -419,4 +435,150 @@ void Application::SaveSettings()
     {
         fprintf(stderr, "Failed to save settings\n");
     }
+
+    // Save connection history
+    SaveConnectionHistory();
+}
+
+// Connection management helper methods
+std::shared_ptr<Database::DatabaseManager> Application::GetActiveConnection()
+{
+    if (m_activeConnectionIndex >= 0 && m_activeConnectionIndex < static_cast<int>(m_databaseConnections.size()))
+    {
+        return m_databaseConnections[m_activeConnectionIndex];
+    }
+    return nullptr;
+}
+
+void Application::SetActiveConnection(int index)
+{
+    if (index >= -1 && index < static_cast<int>(m_databaseConnections.size()))
+    {
+        m_activeConnectionIndex = index;
+        LOG_INFO("Active connection set to index: " + std::to_string(index));
+    }
+}
+
+void Application::AddConnectionToHistory(const Database::ConnectionConfig& config)
+{
+    // Check if this connection already exists in history
+    for (auto& entry : m_connectionHistory)
+    {
+        if (entry.config.DriverName == config.DriverName &&
+            entry.config.ServerAddress == config.ServerAddress &&
+            entry.config.DatabaseName == config.DatabaseName &&
+            entry.config.Username == config.Username)
+        {
+            // Update timestamp for existing entry
+            auto now = std::chrono::system_clock::now();
+            auto time_t_now = std::chrono::system_clock::to_time_t(now);
+            char timeStr[100];
+            std::strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", std::localtime(&time_t_now));
+            entry.lastUsedTimestamp = timeStr;
+            entry.config = config; // Update config in case password or other details changed
+            SaveConnectionHistory();
+            return;
+        }
+    }
+
+    // Add new entry
+    ConnectionHistoryEntry newEntry;
+    newEntry.config = config;
+    auto now = std::chrono::system_clock::now();
+    auto time_t_now = std::chrono::system_clock::to_time_t(now);
+    char timeStr[100];
+    std::strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", std::localtime(&time_t_now));
+    newEntry.lastUsedTimestamp = timeStr;
+
+    m_connectionHistory.push_back(newEntry);
+
+    // Limit history to 50 entries
+    if (m_connectionHistory.size() > 50)
+    {
+        m_connectionHistory.erase(m_connectionHistory.begin());
+    }
+
+    SaveConnectionHistory();
+    LOG_INFO("Added connection to history: " + config.ConnectionName);
+}
+
+int Application::GenerateUniqueConnectionNumber()
+{
+    int maxNum = 0;
+    for (const auto& conn : m_databaseConnections)
+    {
+        if (conn && conn->IsConnected())
+        {
+            std::string name = conn->GetConnectionName();
+            // Extract number from "Connection X" pattern
+            if (name.find("Connection ") == 0)
+            {
+                try
+                {
+                    int num = std::stoi(name.substr(11));
+                    maxNum = std::max(maxNum, num);
+                }
+                catch (...) {}
+            }
+        }
+    }
+    return maxNum + 1;
+}
+
+void Application::LoadConnectionHistory()
+{
+    m_connectionHistory.clear();
+
+    // Load history from settings
+    int historyCount = m_settings.GetInt("ConnectionHistory", "Count", 0);
+
+    for (int i = 0; i < historyCount; ++i)
+    {
+        std::string section = "ConnectionHistory_" + std::to_string(i);
+
+        ConnectionHistoryEntry entry;
+        entry.config.ConnectionName = m_settings.GetString(section, "Name", "");
+        entry.config.DriverName = m_settings.GetString(section, "Driver", "");
+        entry.config.ServerAddress = m_settings.GetString(section, "Server", "");
+        entry.config.ServerPort = m_settings.GetInt(section, "Port", 0);
+        entry.config.DatabaseName = m_settings.GetString(section, "Database", "");
+        entry.config.Username = m_settings.GetString(section, "Username", "");
+        // Note: Don't save passwords for security
+        entry.config.TrustedConnection = m_settings.GetBool(section, "TrustedConnection", false);
+        entry.config.Encrypt = m_settings.GetBool(section, "Encrypt", false);
+        entry.lastUsedTimestamp = m_settings.GetString(section, "LastUsed", "");
+
+        if (!entry.config.DriverName.empty() && !entry.config.ServerAddress.empty())
+        {
+            m_connectionHistory.push_back(entry);
+        }
+    }
+
+    LOG_INFO("Loaded " + std::to_string(m_connectionHistory.size()) + " connection history entries");
+}
+
+void Application::SaveConnectionHistory()
+{
+    // Save count
+    m_settings.SetInt("ConnectionHistory", "Count", static_cast<int>(m_connectionHistory.size()));
+
+    // Save each entry
+    for (size_t i = 0; i < m_connectionHistory.size(); ++i)
+    {
+        std::string section = "ConnectionHistory_" + std::to_string(i);
+        const auto& entry = m_connectionHistory[i];
+
+        m_settings.SetString(section, "Name", entry.config.ConnectionName);
+        m_settings.SetString(section, "Driver", entry.config.DriverName);
+        m_settings.SetString(section, "Server", entry.config.ServerAddress);
+        m_settings.SetInt(section, "Port", entry.config.ServerPort);
+        m_settings.SetString(section, "Database", entry.config.DatabaseName);
+        m_settings.SetString(section, "Username", entry.config.Username);
+        // Note: Don't save passwords for security
+        m_settings.SetBool(section, "TrustedConnection", entry.config.TrustedConnection);
+        m_settings.SetBool(section, "Encrypt", entry.config.Encrypt);
+        m_settings.SetString(section, "LastUsed", entry.lastUsedTimestamp);
+    }
+
+    m_settings.Save();
 }

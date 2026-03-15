@@ -17,6 +17,7 @@ public:
     void RenderWebServerControlWindow(bool* isOpen);
     void RenderWebServerRequestsWindow(bool* isOpen);
     void RenderDatabaseConnectionWindow(bool* isOpen);
+    void RenderDatabaseConnectionsManagerWindow(bool* isOpen);
 
 private:
     class Application* m_app;

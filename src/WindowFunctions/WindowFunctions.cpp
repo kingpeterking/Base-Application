@@ -1203,6 +1203,24 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
                 ImGui::EndCombo();
             }
 
+            // Connection Name field
+            ImGui::Text("Connection Name:");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(250);
+            ImGui::InputText("##conn_name", m_app->m_dbConnectionNameBuffer, Application::DB_BUFFER_SIZE);
+            ImGui::SameLine();
+            if (ImGui::SmallButton("Auto-Generate"))
+            {
+                int connNum = m_app->GenerateUniqueConnectionNumber();
+                sprintf_s(m_app->m_dbConnectionNameBuffer, Application::DB_BUFFER_SIZE, "Connection %d", connNum);
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Generate a unique connection name");
+            }
+            ImGui::SameLine();
+            ImGui::TextDisabled("(Optional - auto-generated if empty)");
+
             ImGui::Text("Server:");
             ImGui::SetNextItemWidth(300);
             ImGui::InputText("##server", m_app->m_dbServerBuffer, Application::DB_BUFFER_SIZE);
@@ -1266,6 +1284,17 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
                 if (ImGui::Button("Connect", ImVec2(120, 0)))
                 {
                     Database::ConnectionConfig config;
+
+                    // Generate connection name if empty
+                    std::string connectionName = m_app->m_dbConnectionNameBuffer;
+                    if (connectionName.empty())
+                    {
+                        int connNum = m_app->GenerateUniqueConnectionNumber();
+                        connectionName = "Connection " + std::to_string(connNum);
+                        strcpy_s(m_app->m_dbConnectionNameBuffer, Application::DB_BUFFER_SIZE, connectionName.c_str());
+                    }
+                    config.ConnectionName = connectionName;
+
                     config.DriverName = m_app->m_dbDriverBuffer;
                     config.ServerAddress = m_app->m_dbServerBuffer;
 
@@ -1285,17 +1314,29 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
                     config.ConnectionTimeout = m_app->m_dbConnectionTimeout;
                     config.CommandTimeout = m_app->m_dbCommandTimeout;
 
-                    if (m_app->m_databaseManager.Connect(config))
+                    // Create new connection manager
+                    auto newConnection = std::make_shared<Database::DatabaseManager>();
+                    if (newConnection->Connect(config))
                     {
-                        m_app->m_dbConnectionStatus = "Connected to " + 
-                            m_app->m_databaseManager.GetDatabaseProduct() + " " +
-                            m_app->m_databaseManager.GetDatabaseVersion();
+                        // Add to connections list
+                        m_app->m_databaseConnections.push_back(newConnection);
+                        m_app->SetActiveConnection(static_cast<int>(m_app->m_databaseConnections.size()) - 1);
+
+                        // Add to history
+                        m_app->AddConnectionToHistory(config);
+
+                        m_app->m_dbConnectionStatus = "Connected: " + connectionName + " - " + 
+                            newConnection->GetDatabaseProduct() + " " +
+                            newConnection->GetDatabaseVersion();
                         LOG_INFO_SRC(m_app->m_dbConnectionStatus, "Database");
+
+                        // Also connect the legacy single connection for backwards compatibility
+                        m_app->m_databaseManager.Connect(config);
                     }
                     else
                     {
                         m_app->m_dbConnectionStatus = "Connection failed: " + 
-                            m_app->m_databaseManager.GetLastError();
+                            newConnection->GetLastError();
                         LOG_ERROR_SRC(m_app->m_dbConnectionStatus, "Database");
                     }
                 }
@@ -1474,17 +1515,35 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
             {
                 if (ImGui::Button("Connect", ImVec2(120, 0)))
                 {
-                    if (m_app->m_databaseManager.ConnectWithConnectionString(m_app->m_dbConnectionStringBuffer))
+                    // Generate connection name
+                    int connNum = m_app->GenerateUniqueConnectionNumber();
+                    std::string connectionName = "Connection " + std::to_string(connNum);
+
+                    // Create new connection manager
+                    auto newConnection = std::make_shared<Database::DatabaseManager>();
+                    if (newConnection->ConnectWithConnectionString(m_app->m_dbConnectionStringBuffer))
                     {
-                        m_app->m_dbConnectionStatus = "Connected to " + 
-                            m_app->m_databaseManager.GetDatabaseProduct() + " " +
-                            m_app->m_databaseManager.GetDatabaseVersion();
+                        // Add to connections list
+                        m_app->m_databaseConnections.push_back(newConnection);
+                        m_app->SetActiveConnection(static_cast<int>(m_app->m_databaseConnections.size()) - 1);
+
+                        // Try to extract config from connection for history
+                        Database::ConnectionConfig config;
+                        config.ConnectionName = connectionName;
+                        // Note: Connection string parsing for history would be complex, skip for now
+
+                        m_app->m_dbConnectionStatus = "Connected: " + connectionName + " - " + 
+                            newConnection->GetDatabaseProduct() + " " +
+                            newConnection->GetDatabaseVersion();
                         LOG_INFO_SRC(m_app->m_dbConnectionStatus, "Database");
+
+                        // Also connect the legacy single connection for backwards compatibility
+                        m_app->m_databaseManager.ConnectWithConnectionString(m_app->m_dbConnectionStringBuffer);
                     }
                     else
                     {
                         m_app->m_dbConnectionStatus = "Connection failed: " + 
-                            m_app->m_databaseManager.GetLastError();
+                            newConnection->GetLastError();
                         LOG_ERROR_SRC(m_app->m_dbConnectionStatus, "Database");
                     }
                 }
@@ -1675,17 +1734,30 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
 
                     LOG_INFO_SRC("Attempting DSN connection: " + dsnConnectionString, "Database");
 
-                    if (m_app->m_databaseManager.ConnectWithConnectionString(dsnConnectionString))
+                    // Generate connection name
+                    int connNum = m_app->GenerateUniqueConnectionNumber();
+                    std::string connectionName = "DSN: " + std::string(m_app->m_dbDSNBuffer) + " (" + std::to_string(connNum) + ")";
+
+                    // Create new connection manager
+                    auto newConnection = std::make_shared<Database::DatabaseManager>();
+                    if (newConnection->ConnectWithConnectionString(dsnConnectionString))
                     {
-                        m_app->m_dbConnectionStatus = "Connected via DSN to " + 
-                            m_app->m_databaseManager.GetDatabaseProduct() + " " +
-                            m_app->m_databaseManager.GetDatabaseVersion();
+                        // Add to connections list
+                        m_app->m_databaseConnections.push_back(newConnection);
+                        m_app->SetActiveConnection(static_cast<int>(m_app->m_databaseConnections.size()) - 1);
+
+                        m_app->m_dbConnectionStatus = "Connected: " + connectionName + " - " + 
+                            newConnection->GetDatabaseProduct() + " " +
+                            newConnection->GetDatabaseVersion();
                         LOG_INFO_SRC(m_app->m_dbConnectionStatus, "Database");
+
+                        // Also connect the legacy single connection for backwards compatibility
+                        m_app->m_databaseManager.ConnectWithConnectionString(dsnConnectionString);
                     }
                     else
                     {
                         m_app->m_dbConnectionStatus = "DSN connection failed: " + 
-                            m_app->m_databaseManager.GetLastError();
+                            newConnection->GetLastError();
                         LOG_ERROR_SRC(m_app->m_dbConnectionStatus, "Database");
                     }
                 }
@@ -1830,4 +1902,363 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
     ImGui::End();
 }
 
+// Render Database Connections Manager Window
+void WindowFunctions::RenderDatabaseConnectionsManagerWindow(bool* isOpen)
+{
+    ImGui::SetNextWindowSize(ImVec2(900, 600), ImGuiCond_FirstUseEver);
+    if (!ImGui::Begin("Database Connections Manager", isOpen))
+    {
+        ImGui::End();
+        return;
+    }
+
+    // Create tabs
+    if (ImGui::BeginTabBar("ConnectionsTabBar"))
+    {
+        // Tab 1: Active Connections
+        if (ImGui::BeginTabItem("Active Connections"))
+        {
+            ImGui::TextWrapped("Manage all currently active database connections. You can have multiple connections open simultaneously.");
+            ImGui::Separator();
+
+            if (m_app->m_databaseConnections.empty())
+            {
+                ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.2f, 1.0f), "No active connections.");
+                ImGui::Text("Use 'Database Connection' window to create new connections.");
+            }
+            else
+            {
+                ImGui::Text("Total Connections: %d", static_cast<int>(m_app->m_databaseConnections.size()));
+                ImGui::SameLine();
+                if (m_app->m_activeConnectionIndex >= 0)
+                {
+                    ImGui::Text("| Active: %s", m_app->m_databaseConnections[m_app->m_activeConnectionIndex]->GetConnectionName().c_str());
+                }
+                else
+                {
+                    ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.2f, 1.0f), "| No active connection selected");
+                }
+                ImGui::Separator();
+
+                // Table of connections
+                if (ImGui::BeginTable("ActiveConnectionsTable", 7, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+                {
+                    ImGui::TableSetupColumn("Active", ImGuiTableColumnFlags_WidthFixed, 60.0f);
+                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 120.0f);
+                    ImGui::TableSetupColumn("Driver", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+                    ImGui::TableSetupColumn("Server", ImGuiTableColumnFlags_WidthFixed, 150.0f);
+                    ImGui::TableSetupColumn("Database", ImGuiTableColumnFlags_WidthFixed, 120.0f);
+                    ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+                    ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableHeadersRow();
+
+                    int indexToRemove = -1;
+                    int indexToSetActive = -1;
+
+                    for (int i = 0; i < static_cast<int>(m_app->m_databaseConnections.size()); ++i)
+                    {
+                        auto& conn = m_app->m_databaseConnections[i];
+                        if (!conn) continue;
+
+                        ImGui::TableNextRow();
+
+                        // Active indicator
+                        ImGui::TableSetColumnIndex(0);
+                        if (i == m_app->m_activeConnectionIndex)
+                        {
+                            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "✓ Active");
+                        }
+                        else
+                        {
+                            ImGui::Text("   ");
+                        }
+
+                        // Name
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::TextUnformatted(conn->GetConnectionName().c_str());
+
+                        // Driver
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::TextUnformatted(conn->GetDriverName().c_str());
+
+                        // Server
+                        ImGui::TableSetColumnIndex(3);
+                        ImGui::TextUnformatted(conn->GetServerName().c_str());
+
+                        // Database
+                        ImGui::TableSetColumnIndex(4);
+                        ImGui::TextUnformatted(conn->GetCurrentDatabaseName().c_str());
+
+                        // Status
+                        ImGui::TableSetColumnIndex(5);
+                        if (conn->IsConnected())
+                        {
+                            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Connected");
+                        }
+                        else
+                        {
+                            ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Disconnected");
+                        }
+
+                        // Actions
+                        ImGui::TableSetColumnIndex(6);
+
+                        ImGui::PushID(i);
+
+                        if (i != m_app->m_activeConnectionIndex)
+                        {
+                            if (ImGui::SmallButton("Set Active"))
+                            {
+                                indexToSetActive = i;
+                            }
+                            ImGui::SameLine();
+                        }
+
+                        if (ImGui::SmallButton("Disconnect"))
+                        {
+                            indexToRemove = i;
+                        }
+
+                        ImGui::PopID();
+                    }
+
+                    ImGui::EndTable();
+
+                    // Process actions after table rendering
+                    if (indexToSetActive >= 0)
+                    {
+                        m_app->SetActiveConnection(indexToSetActive);
+                        LOG_INFO("Set active connection: " + m_app->m_databaseConnections[indexToSetActive]->GetConnectionName());
+                    }
+
+                    if (indexToRemove >= 0)
+                    {
+                        auto& conn = m_app->m_databaseConnections[indexToRemove];
+                        std::string name = conn->GetConnectionName();
+                        conn->Disconnect();
+                        m_app->m_databaseConnections.erase(m_app->m_databaseConnections.begin() + indexToRemove);
+
+                        // Adjust active connection index
+                        if (m_app->m_activeConnectionIndex == indexToRemove)
+                        {
+                            m_app->m_activeConnectionIndex = -1;
+                        }
+                        else if (m_app->m_activeConnectionIndex > indexToRemove)
+                        {
+                            m_app->m_activeConnectionIndex--;
+                        }
+
+                        LOG_INFO("Disconnected and removed connection: " + name);
+                    }
+                }
+            }
+
+            ImGui::EndTabItem();
+        }
+
+        // Tab 2: Connection History
+        if (ImGui::BeginTabItem("Connection History"))
+        {
+            ImGui::TextWrapped("Previously successful connections. Click 'Reconnect' to quickly establish a saved connection.");
+            ImGui::Text("Note: Passwords are not saved for security. You'll need to re-enter passwords for reconnection.");
+            ImGui::Separator();
+
+            if (m_app->m_connectionHistory.empty())
+            {
+                ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.2f, 1.0f), "No connection history yet.");
+                ImGui::Text("Successfully connect to a database to add it to history.");
+            }
+            else
+            {
+                ImGui::Text("Total History Entries: %d", static_cast<int>(m_app->m_connectionHistory.size()));
+                ImGui::Separator();
+
+                // Table of history
+                if (ImGui::BeginTable("ConnectionHistoryTable", 7, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable))
+                {
+                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 120.0f);
+                    ImGui::TableSetupColumn("Driver", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+                    ImGui::TableSetupColumn("Server", ImGuiTableColumnFlags_WidthFixed, 150.0f);
+                    ImGui::TableSetupColumn("Database", ImGuiTableColumnFlags_WidthFixed, 120.0f);
+                    ImGui::TableSetupColumn("Username", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+                    ImGui::TableSetupColumn("Last Used", ImGuiTableColumnFlags_WidthFixed, 140.0f);
+                    ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableHeadersRow();
+
+                    int indexToReconnect = -1;
+                    int indexToDelete = -1;
+                    static char reconnectPasswordBuffer[256] = "";
+                    static int reconnectingIndex = -1;
+
+                    for (int i = 0; i < static_cast<int>(m_app->m_connectionHistory.size()); ++i)
+                    {
+                        const auto& entry = m_app->m_connectionHistory[i];
+
+                        ImGui::TableNextRow();
+
+                        // Name
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::TextUnformatted(entry.config.ConnectionName.c_str());
+
+                        // Driver
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::TextUnformatted(entry.config.DriverName.c_str());
+
+                        // Server
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::TextUnformatted(entry.config.ServerAddress.c_str());
+
+                        // Database
+                        ImGui::TableSetColumnIndex(3);
+                        ImGui::TextUnformatted(entry.config.DatabaseName.c_str());
+
+                        // Username
+                        ImGui::TableSetColumnIndex(4);
+                        if (entry.config.TrustedConnection)
+                        {
+                            ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "(Trusted)");
+                        }
+                        else
+                        {
+                            ImGui::TextUnformatted(entry.config.Username.c_str());
+                        }
+
+                        // Last Used
+                        ImGui::TableSetColumnIndex(5);
+                        ImGui::TextUnformatted(entry.lastUsedTimestamp.c_str());
+
+                        // Actions
+                        ImGui::TableSetColumnIndex(6);
+                        ImGui::PushID(i);
+
+                        // Show password input if this is the reconnecting entry
+                        if (reconnectingIndex == i)
+                        {
+                            ImGui::Text("Password:");
+                            ImGui::SameLine();
+                            ImGui::SetNextItemWidth(100);
+                            if (ImGui::InputText("##pwd", reconnectPasswordBuffer, sizeof(reconnectPasswordBuffer), ImGuiInputTextFlags_Password | ImGuiInputTextFlags_EnterReturnsTrue))
+                            {
+                                indexToReconnect = i;
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::SmallButton("Connect"))
+                            {
+                                indexToReconnect = i;
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::SmallButton("Cancel"))
+                            {
+                                reconnectingIndex = -1;
+                                memset(reconnectPasswordBuffer, 0, sizeof(reconnectPasswordBuffer));
+                            }
+                        }
+                        else
+                        {
+                            if (ImGui::SmallButton("Reconnect"))
+                            {
+                                if (entry.config.TrustedConnection || !entry.config.Username.empty())
+                                {
+                                    // If trusted connection or has username, prompt for password
+                                    reconnectingIndex = i;
+                                    memset(reconnectPasswordBuffer, 0, sizeof(reconnectPasswordBuffer));
+                                }
+                                else
+                                {
+                                    // No credentials needed
+                                    indexToReconnect = i;
+                                }
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::SmallButton("Delete"))
+                            {
+                                indexToDelete = i;
+                            }
+                        }
+
+                        ImGui::PopID();
+                    }
+
+                    ImGui::EndTable();
+
+                    // Process reconnect action
+                    if (indexToReconnect >= 0)
+                    {
+                        Database::ConnectionConfig config = m_app->m_connectionHistory[indexToReconnect].config;
+
+                        // If password was entered, use it
+                        if (reconnectingIndex == indexToReconnect && strlen(reconnectPasswordBuffer) > 0)
+                        {
+                            config.Password = reconnectPasswordBuffer;
+                        }
+
+                        // Ensure unique connection name
+                        int connNum = m_app->GenerateUniqueConnectionNumber();
+                        if (config.ConnectionName.empty() || config.ConnectionName == "Connection 1")
+                        {
+                            config.ConnectionName = "Connection " + std::to_string(connNum);
+                        }
+                        else
+                        {
+                            config.ConnectionName = config.ConnectionName + " (" + std::to_string(connNum) + ")";
+                        }
+
+                        // Create new connection
+                        auto newConnection = std::make_shared<Database::DatabaseManager>();
+                        if (newConnection->Connect(config))
+                        {
+                            m_app->m_databaseConnections.push_back(newConnection);
+                            m_app->SetActiveConnection(static_cast<int>(m_app->m_databaseConnections.size()) - 1);
+                            m_app->AddConnectionToHistory(config);
+                            LOG_INFO("Reconnected to: " + config.ConnectionName);
+                            m_app->m_dbConnectionStatus = "Connected: " + config.ConnectionName;
+
+                            // Clear password buffer
+                            memset(reconnectPasswordBuffer, 0, sizeof(reconnectPasswordBuffer));
+                            reconnectingIndex = -1;
+                        }
+                        else
+                        {
+                            LOG_ERROR("Failed to reconnect: " + newConnection->GetLastError());
+                            m_app->m_dbConnectionStatus = "Connection failed: " + newConnection->GetLastError();
+                        }
+                    }
+
+                    // Process delete action
+                    if (indexToDelete >= 0)
+                    {
+                        std::string name = m_app->m_connectionHistory[indexToDelete].config.ConnectionName;
+                        m_app->m_connectionHistory.erase(m_app->m_connectionHistory.begin() + indexToDelete);
+                        m_app->SaveConnectionHistory();
+                        LOG_INFO("Deleted connection history: " + name);
+
+                        if (reconnectingIndex == indexToDelete)
+                        {
+                            reconnectingIndex = -1;
+                            memset(reconnectPasswordBuffer, 0, sizeof(reconnectPasswordBuffer));
+                        }
+                        else if (reconnectingIndex > indexToDelete)
+                        {
+                            reconnectingIndex--;
+                        }
+                    }
+                }
+            }
+
+            ImGui::Spacing();
+            if (ImGui::Button("Clear All History"))
+            {
+                m_app->m_connectionHistory.clear();
+                m_app->SaveConnectionHistory();
+                LOG_INFO("Cleared all connection history");
+            }
+
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
+    }
+
+    ImGui::End();
+}
 

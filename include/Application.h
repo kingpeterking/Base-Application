@@ -36,6 +36,7 @@ private:
     void RenderWebServerControlWindow(bool* isOpen);
     void RenderWebServerRequestsWindow(bool* isOpen);
     void RenderDatabaseConnectionWindow(bool* isOpen);
+    void RenderDatabaseConnectionsManagerWindow(bool* isOpen);
 
     GLFWwindow* m_window;
     ImVec4 m_clearColor;
@@ -46,7 +47,26 @@ private:
     WebServer m_webServer;
     ImPlotClient m_implotClient;
     std::unique_ptr<WindowFunctions> m_windowFunctions;
-    Database::DatabaseManager m_databaseManager;
+
+    // Database connections - support multiple simultaneous connections
+    Database::DatabaseManager m_databaseManager; // Primary/legacy single connection
+    std::vector<std::shared_ptr<Database::DatabaseManager>> m_databaseConnections;
+    int m_activeConnectionIndex; // Index of currently active connection (-1 = none)
+
+    // Connection history for quick reconnect
+    struct ConnectionHistoryEntry {
+        Database::ConnectionConfig config;
+        std::string lastUsedTimestamp;
+    };
+    std::vector<ConnectionHistoryEntry> m_connectionHistory;
+
+    // Helper methods for connection management
+    std::shared_ptr<Database::DatabaseManager> GetActiveConnection();
+    void SetActiveConnection(int index);
+    void AddConnectionToHistory(const Database::ConnectionConfig& config);
+    void LoadConnectionHistory();
+    void SaveConnectionHistory();
+    int GenerateUniqueConnectionNumber(); // For auto-naming connections
 
     // URL Request state
     static constexpr size_t URL_BUFFER_SIZE = 512;
@@ -61,6 +81,7 @@ private:
 
     // Database connection state
     static constexpr size_t DB_BUFFER_SIZE = 256;
+    char m_dbConnectionNameBuffer[DB_BUFFER_SIZE]; // New: connection name
     char m_dbDriverBuffer[DB_BUFFER_SIZE];
     char m_dbServerBuffer[DB_BUFFER_SIZE];
     char m_dbPortBuffer[16];
@@ -75,7 +96,7 @@ private:
     bool m_dbEncrypt;
     int m_dbConnectionTimeout;
     int m_dbCommandTimeout;
-    int m_dbSelectedConnectionMode; // 0 = Form, 1 = Connection String, 2 = DSN
+    int m_dbSelectedConnectionMode; // 0 = Form, 1 = Connection String, 2 = DSN, 3 = Quick Connect
     std::string m_dbConnectionStatus;
     std::vector<std::string> m_availableDrivers;
 

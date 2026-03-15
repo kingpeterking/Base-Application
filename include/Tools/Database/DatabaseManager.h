@@ -11,6 +11,7 @@ namespace Database {
 
     // Connection configuration
     struct ConnectionConfig {
+        std::string ConnectionName;     // User-friendly connection name
         std::string DriverName;         // ODBC driver name (e.g., "SQL Server", "PostgreSQL", "MySQL")
         std::string ServerAddress;      // Server address or hostname
         int ServerPort = 0;             // Server port (0 = use default)
@@ -50,12 +51,14 @@ namespace Database {
         std::vector<std::string> GetDatabaseNames();
 
         // Connection information
+        std::string GetConnectionName() const { return m_Config.ConnectionName; }
         std::string GetCurrentDatabaseName() const { return m_CurrentDatabaseName; }
         std::string GetServerName() const;
         std::string GetDatabaseProduct() const;
         std::string GetDatabaseVersion() const;
         std::string GetDriverName() const;
         std::string GetDriverVersion() const;
+        ConnectionConfig GetConfig() const { return m_Config; }
 
         // ODBC drivers
         static std::vector<std::string> GetAvailableDrivers();
