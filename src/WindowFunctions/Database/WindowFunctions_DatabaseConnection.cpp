@@ -4,7 +4,7 @@
 #include "Tools/Logger.h"
 
 // ============================================================================
-// DATABASE WINDOW FUNCTIONS
+// DATABASE CONNECTION WINDOW FUNCTIONS
 // ============================================================================
 // Database Connection, Database Connections Manager
 // ============================================================================
@@ -157,11 +157,6 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
                         connectionName = "Connection " + std::to_string(connNum);
                         strcpy_s(m_app->m_dbConnectionNameBuffer, Application::DB_BUFFER_SIZE, connectionName.c_str());
                     }
-                    // Ensure connection name is always valid and unique
-                    if (connectionName.empty())
-                    {
-                        connectionName = "Connection 1";
-                    }
                     config.ConnectionName = connectionName;
 
                     config.DriverName = m_app->m_dbDriverBuffer;
@@ -183,8 +178,63 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
                     config.ConnectionTimeout = m_app->m_dbConnectionTimeout;
                     config.CommandTimeout = m_app->m_dbCommandTimeout;
 
-                    // Create new connection manager
-                    auto newConnection = std::make_shared<Database::DatabaseManager>();
+                    // Check for duplicate connection
+                    std::string driverName = config.DriverName;
+                    std::string serverAddr = config.ServerAddress;
+                    std::string dbName = config.DatabaseName;
+                    std::string username = config.Username;
+                    int port = config.ServerPort;
+
+                    bool isDuplicate = false;
+                    std::string existingConnName;
+                    for (const auto& existingConn : m_app->m_databaseConnections)
+                    {
+                        if (existingConn && existingConn->IsConnected())
+                        {
+                            // Compare connection parameters (case-insensitive for server names)
+                            bool sameDriver = (existingConn->GetDriverName() == driverName);
+                            bool sameServer = (_stricmp(existingConn->GetServerName().c_str(), serverAddr.c_str()) == 0);
+                            bool sameDatabase = (existingConn->GetCurrentDatabaseName() == dbName);
+
+                            // For MS Access, only compare server (file path) since database is empty
+                            bool isAccessDriver = (driverName.find("Access") != std::string::npos);
+
+                            if (isAccessDriver)
+                            {
+                                if (sameDriver && sameServer)
+                                {
+                                    isDuplicate = true;
+                                    existingConnName = existingConn->GetConnectionName();
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                // For regular databases, compare driver, server, database, and username
+                                // Note: Not comparing username for trusted connections
+                                bool sameCredentials = config.TrustedConnection || 
+                                    (existingConn->GetUsername() == username);
+
+                                if (sameDriver && sameServer && sameDatabase && sameCredentials)
+                                {
+                                    isDuplicate = true;
+                                    existingConnName = existingConn->GetConnectionName();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (isDuplicate)
+                    {
+                        m_app->m_dbConnectionStatus = "Connection already exists: " + existingConnName + 
+                            ". Cannot create duplicate connection.";
+                        LOG_WARNING_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                    else
+                    {
+                        // Create new connection manager
+                        auto newConnection = std::make_shared<Database::DatabaseManager>();
                     if (newConnection->Connect(config))
                     {
                         // Add to connections list
@@ -207,6 +257,7 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
                         m_app->m_dbConnectionStatus = "Connection failed: " + 
                             newConnection->GetLastError();
                         LOG_ERROR_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
                     }
                 }
                 ImGui::SameLine();
@@ -352,48 +403,76 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
 
                 if (ImGui::Button("Connect", ImVec2(120, 0)))
                 {
-                    // Generate unique connection name
+                    // Generate connection name
                     int connNum = m_app->GenerateUniqueConnectionNumber();
                     std::string connectionName = "Connection " + std::to_string(connNum);
 
-                    // Create connection config with name first
+                    // Normalize connection string (remove password) for storage and duplicate detection
+                    std::string currentConnStr = m_app->m_dbConnectionStringBuffer;
+                    std::string normalizedConnStr = currentConnStr;
+                    size_t pwdPos = normalizedConnStr.find("Pwd=");
+                    if (pwdPos == std::string::npos) pwdPos = normalizedConnStr.find("PWD=");
+                    if (pwdPos == std::string::npos) pwdPos = normalizedConnStr.find("Password=");
+                    if (pwdPos != std::string::npos)
+                    {
+                        size_t endPos = normalizedConnStr.find(';', pwdPos);
+                        if (endPos != std::string::npos)
+                        {
+                            normalizedConnStr.erase(pwdPos, endPos - pwdPos + 1);
+                        }
+                        else
+                        {
+                            normalizedConnStr.erase(pwdPos);
+                        }
+                    }
+
+                    // Create connection config with name and original connection string
                     Database::ConnectionConfig tempConfig;
                     tempConfig.ConnectionName = connectionName;
+                    tempConfig.OriginalConnectionString = normalizedConnStr;
 
-                    // Create new connection manager
-                    auto newConnection = std::make_shared<Database::DatabaseManager>();
+                    // Check for duplicate connection by comparing connection strings (without password)
+                    bool isDuplicate = false;
+                    std::string existingConnName;
+                    for (const auto& existingConn : m_app->m_databaseConnections)
+                    {
+                        if (existingConn && existingConn->IsConnected())
+                        {
+                            std::string existingOriginalStr = existingConn->GetOriginalConnectionString();
+                            if (!existingOriginalStr.empty())
+                            {
+                                // Case-insensitive comparison
+                                if (_stricmp(normalizedConnStr.c_str(), existingOriginalStr.c_str()) == 0)
+                                {
+                                    isDuplicate = true;
+                                    existingConnName = existingConn->GetConnectionName();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (isDuplicate)
+                    {
+                        m_app->m_dbConnectionStatus = "Connection already exists: " + existingConnName + 
+                            ". Cannot create duplicate connection.";
+                        LOG_WARNING_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                    else
+                    {
+                        // Create new connection manager
+                        auto newConnection = std::make_shared<Database::DatabaseManager>();
                     if (newConnection->ConnectWithConnectionString(m_app->m_dbConnectionStringBuffer, tempConfig))
                     {
                         // Add to connections list
                         m_app->m_databaseConnections.push_back(newConnection);
                         m_app->SetActiveConnection(static_cast<int>(m_app->m_databaseConnections.size()) - 1);
 
-                        // Create config for history
-                        Database::ConnectionConfig config;
-                        config.ConnectionName = connectionName;
+                        // Create config for history (reuse tempConfig but add additional info)
+                        Database::ConnectionConfig config = tempConfig;
                         config.DriverName = newConnection->GetDriverName();
                         config.ServerAddress = newConnection->GetServerName();
                         config.DatabaseName = newConnection->GetCurrentDatabaseName();
-
-                        // Store original connection string (with password removed for security)
-                        std::string originalConnStr = m_app->m_dbConnectionStringBuffer;
-                        // Remove password from connection string for storage
-                        size_t pwdPos = originalConnStr.find("Pwd=");
-                        if (pwdPos == std::string::npos) pwdPos = originalConnStr.find("PWD=");
-                        if (pwdPos == std::string::npos) pwdPos = originalConnStr.find("Password=");
-                        if (pwdPos != std::string::npos)
-                        {
-                            size_t endPos = originalConnStr.find(';', pwdPos);
-                            if (endPos != std::string::npos)
-                            {
-                                originalConnStr.erase(pwdPos, endPos - pwdPos + 1);
-                            }
-                            else
-                            {
-                                originalConnStr.erase(pwdPos);
-                            }
-                        }
-                        config.OriginalConnectionString = originalConnStr;
 
                         // Add to history
                         m_app->AddConnectionToHistory(config);
@@ -411,6 +490,7 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
                         m_app->m_dbConnectionStatus = "Connection failed: " + 
                             newConnection->GetLastError();
                         LOG_ERROR_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
                     }
                 }
                 ImGui::SameLine();
@@ -580,38 +660,90 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
 
                     LOG_INFO_SRC("Attempting DSN connection: " + dsnConnectionString, "Database");
 
-                    // Generate unique connection name
-                    int connNum = m_app->GenerateUniqueConnectionNumber();
-                    std::string connectionName = "DSN: " + std::string(m_app->m_dbDSNBuffer) + " (" + std::to_string(connNum) + ")";
+                    // Check for duplicate DSN connection
+                    std::string currentDSN = m_app->m_dbDSNBuffer;
+                    bool isDuplicate = false;
+                    std::string existingConnName;
 
-                    // Create connection config with name first
-                    Database::ConnectionConfig tempConfig;
-                    tempConfig.ConnectionName = connectionName;
+                    for (const auto& existingConn : m_app->m_databaseConnections)
+                    {
+                        if (existingConn && existingConn->IsConnected())
+                        {
+                            std::string existingOriginalStr = existingConn->GetOriginalConnectionString();
+                            // Check if this is a DSN connection by looking for "DSN=" in the connection string
+                            if (existingOriginalStr.find("DSN=") != std::string::npos ||
+                                existingOriginalStr.find("dsn=") != std::string::npos)
+                            {
+                                // Extract DSN name from existing connection
+                                size_t dsnPos = existingOriginalStr.find("DSN=");
+                                if (dsnPos == std::string::npos)
+                                    dsnPos = existingOriginalStr.find("dsn=");
 
-                    // Create new connection manager
-                    auto newConnection = std::make_shared<Database::DatabaseManager>();
+                                if (dsnPos != std::string::npos)
+                                {
+                                    dsnPos += 4; // Skip "DSN="
+                                    size_t endPos = existingOriginalStr.find(';', dsnPos);
+                                    std::string existingDSN;
+                                    if (endPos != std::string::npos)
+                                    {
+                                        existingDSN = existingOriginalStr.substr(dsnPos, endPos - dsnPos);
+                                    }
+                                    else
+                                    {
+                                        existingDSN = existingOriginalStr.substr(dsnPos);
+                                    }
+
+                                    // Compare DSN names (case-insensitive)
+                                    if (_stricmp(currentDSN.c_str(), existingDSN.c_str()) == 0)
+                                    {
+                                        isDuplicate = true;
+                                        existingConnName = existingConn->GetConnectionName();
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (isDuplicate)
+                    {
+                        m_app->m_dbConnectionStatus = "DSN connection already exists: " + existingConnName + 
+                            ". Cannot create duplicate connection to the same DSN.";
+                        LOG_WARNING_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
+                    else
+                    {
+                        // Generate unique connection name
+                        int connNum = m_app->GenerateUniqueConnectionNumber();
+                        std::string connectionName = "DSN: " + std::string(m_app->m_dbDSNBuffer) + " (" + std::to_string(connNum) + ")";
+
+                        // Build original DSN connection string (without password) for storage and duplicate detection
+                        std::string originalDsnStr = "DSN=" + std::string(m_app->m_dbDSNBuffer) + ";";
+                        if (strlen(m_app->m_dbDSNUsernameBuffer) > 0)
+                        {
+                            originalDsnStr += "Uid=" + std::string(m_app->m_dbDSNUsernameBuffer) + ";";
+                        }
+
+                        // Create connection config with name and original connection string
+                        Database::ConnectionConfig tempConfig;
+                        tempConfig.ConnectionName = connectionName;
+                        tempConfig.OriginalConnectionString = originalDsnStr;
+                        tempConfig.Username = m_app->m_dbDSNUsernameBuffer;
+                        tempConfig.TrustedConnection = (strlen(m_app->m_dbDSNUsernameBuffer) == 0);
+
+                        // Create new connection manager
+                        auto newConnection = std::make_shared<Database::DatabaseManager>();
                     if (newConnection->ConnectWithConnectionString(dsnConnectionString, tempConfig))
                     {
                         // Add to connections list
                         m_app->m_databaseConnections.push_back(newConnection);
                         m_app->SetActiveConnection(static_cast<int>(m_app->m_databaseConnections.size()) - 1);
 
-                        // Create config for history
-                        Database::ConnectionConfig config;
-                        config.ConnectionName = connectionName;
+                        // Create config for history (reuse tempConfig but add additional info)
+                        Database::ConnectionConfig config = tempConfig;
                         config.DriverName = newConnection->GetDriverName();
                         config.ServerAddress = newConnection->GetServerName();
                         config.DatabaseName = newConnection->GetCurrentDatabaseName();
-                        config.Username = m_app->m_dbDSNUsernameBuffer;
-                        config.TrustedConnection = (strlen(m_app->m_dbDSNUsernameBuffer) == 0);
-
-                        // Store original DSN connection string (without password)
-                        std::string originalDsnStr = "DSN=" + std::string(m_app->m_dbDSNBuffer) + ";";
-                        if (strlen(m_app->m_dbDSNUsernameBuffer) > 0)
-                        {
-                            originalDsnStr += "Uid=" + std::string(m_app->m_dbDSNUsernameBuffer) + ";";
-                        }
-                        config.OriginalConnectionString = originalDsnStr;
 
                         // Add to history
                         m_app->AddConnectionToHistory(config);
@@ -629,6 +761,7 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
                         m_app->m_dbConnectionStatus = "DSN connection failed: " + 
                             newConnection->GetLastError();
                         LOG_ERROR_SRC(m_app->m_dbConnectionStatus, "Database");
+                    }
                     }
                 }
                 ImGui::SameLine();
@@ -701,8 +834,6 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
 
     ImGui::End();
 }
-
-
 
 void WindowFunctions::RenderDatabaseConnectionsManagerWindow(bool* isOpen)
 {
@@ -1102,4 +1233,3 @@ void WindowFunctions::RenderDatabaseConnectionsManagerWindow(bool* isOpen)
 
     ImGui::End();
 }
-

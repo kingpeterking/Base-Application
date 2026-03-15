@@ -26,6 +26,21 @@ namespace Database {
         bool TableExists(const std::string& tableName);
         std::vector<std::string> GetTableNames();
 
+        // Database object inspection
+        std::vector<std::string> GetViewNames();
+        std::vector<std::string> GetStoredProcedureNames();
+        std::vector<std::string> GetAllObjectNames(const std::string& objectType = ""); // Empty = all types
+
+        // Detailed object information
+        struct DatabaseObjectInfo {
+            std::string Name;
+            std::string Type;        // TABLE, VIEW, PROCEDURE, FUNCTION, etc.
+            std::string Schema;      // Schema/owner
+            std::string Definition;  // For views and procedures (if available)
+            std::string Remarks;     // Comments/description
+        };
+        std::vector<DatabaseObjectInfo> GetDatabaseObjects(const std::string& typeFilter = "");
+
         // Load all tables from the database
         bool LoadSchema();
 

@@ -78,6 +78,11 @@ namespace Database {
             m_Config = config;
             std::string connectionString = config.BuildConnectionString();
 
+            // Store connection string without password for duplicate detection
+            ConnectionConfig tempConfig = config;
+            tempConfig.Password = "";  // Remove password
+            m_Config.OriginalConnectionString = tempConfig.BuildConnectionString();
+
             Logger::GetInstance().Info("Connecting to database: " + config.DatabaseName, "DatabaseManager");
             Logger::GetInstance().Info("Connection string: " + connectionString, "DatabaseManager");
 
@@ -102,14 +107,22 @@ namespace Database {
         }
     }
 
-    bool DatabaseManager::ConnectWithConnectionString(const std::string& connectionString) {
+    bool DatabaseManager::ConnectWithConnectionString(const std::string& connectionString, const ConnectionConfig& config) {
         try {
+            // Store the config (especially the connection name)
+            m_Config = config;
+
             Logger::GetInstance().Info("Connecting with connection string", "DatabaseManager");
             m_Connection = std::make_shared<nanodbc::connection>(connectionString);
 
             if (m_Connection->connected()) {
                 m_CurrentDatabaseName = m_Connection->database_name();
                 m_CurrentDatabase = std::make_shared<Database>(m_CurrentDatabaseName, m_Connection);
+
+                // If connection name wasn't provided, generate a default one
+                if (m_Config.ConnectionName.empty()) {
+                    m_Config.ConnectionName = "Connection (unnamed)";
+                }
 
                 Logger::GetInstance().Info("Connected to " + GetDatabaseProduct() + " " + GetDatabaseVersion(), "DatabaseManager");
                 Logger::GetInstance().Info("Driver: " + GetDriverName() + " " + GetDriverVersion(), "DatabaseManager");
@@ -386,6 +399,38 @@ namespace Database {
 
     void DatabaseManager::SetError(const std::string& error) {
         m_LastError = error;
+    }
+
+    std::vector<std::string> DatabaseManager::GetTableNames() {
+        if (!m_CurrentDatabase) {
+            SetError("No database selected");
+            return std::vector<std::string>();
+        }
+        return m_CurrentDatabase->GetTableNames();
+    }
+
+    std::vector<std::string> DatabaseManager::GetViewNames() {
+        if (!m_CurrentDatabase) {
+            SetError("No database selected");
+            return std::vector<std::string>();
+        }
+        return m_CurrentDatabase->GetViewNames();
+    }
+
+    std::vector<std::string> DatabaseManager::GetStoredProcedureNames() {
+        if (!m_CurrentDatabase) {
+            SetError("No database selected");
+            return std::vector<std::string>();
+        }
+        return m_CurrentDatabase->GetStoredProcedureNames();
+    }
+
+    std::vector<Database::DatabaseObjectInfo> DatabaseManager::GetDatabaseObjects(const std::string& typeFilter) {
+        if (!m_CurrentDatabase) {
+            SetError("No database selected");
+            return std::vector<Database::DatabaseObjectInfo>();
+        }
+        return m_CurrentDatabase->GetDatabaseObjects(typeFilter);
     }
 
 } // namespace Database

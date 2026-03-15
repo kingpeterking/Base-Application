@@ -151,7 +151,8 @@ add_executable(ImGuiApp
     src/WindowFunctions/WindowFunctions_Core.cpp
     src/WindowFunctions/WindowFunctions_Web.cpp
     src/WindowFunctions/WindowFunctions_FileSystem.cpp
-    src/WindowFunctions/WindowFunctions_Database.cpp
+    src/WindowFunctions/Database/WindowFunctions_DatabaseConnection.cpp
+    src/WindowFunctions/Database/WindowFunctions_DatabaseObjects.cpp
     src/Tools/Database/DatabaseManager.cpp
     src/Tools/Database/Database.cpp
     src/Tools/Database/Table.cpp

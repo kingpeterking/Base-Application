@@ -126,45 +126,134 @@ namespace Database {
             m_Indexes.clear();
             m_ForeignKeys.clear();
 
-            // Get column information
-            nanodbc::catalog catalog(*m_Connection);
-            auto columns = catalog.find_columns(m_Name, "");
+            // Get database product to determine if this is MS Access
+            std::string dbProduct;
+            try {
+                dbProduct = m_Connection->dbms_name();
+            } catch (...) {
+                dbProduct = "";
+            }
+            bool isAccess = (dbProduct.find("ACCESS") != std::string::npos || 
+                           dbProduct.find("Access") != std::string::npos);
 
-            while (columns.next()) {
-                std::string columnName = columns.column_name();
-                int dataType = columns.data_type();
-                int columnSize = columns.column_size();
-                bool nullable = (columns.nullable() == SQL_NULLABLE);
+            // Method 1: Try nanodbc catalog functions first
+            try {
+                nanodbc::catalog catalog(*m_Connection);
+                auto columns = catalog.find_columns(m_Name, "");
 
-                FieldType fieldType = SQLTypeToFieldType(dataType);
-                FieldMetadata field(columnName, fieldType, columnSize, nullable);
+                int columnCount = 0;
+                while (columns.next()) {
+                    std::string columnName = columns.column_name();
+                    int dataType = columns.data_type();
+                    int columnSize = columns.column_size();
+                    bool nullable = (columns.nullable() == SQL_NULLABLE);
 
-                // Set precision and scale for numeric types
-                if (fieldType == FieldType::Decimal || fieldType == FieldType::Numeric) {
-                    field.SetPrecision(columnSize);
-                    field.SetScale(columns.decimal_digits());
+                    FieldType fieldType = SQLTypeToFieldType(dataType);
+                    FieldMetadata field(columnName, fieldType, columnSize, nullable);
+
+                    // Set precision and scale for numeric types
+                    if (fieldType == FieldType::Decimal || fieldType == FieldType::Numeric) {
+                        field.SetPrecision(columnSize);
+                        field.SetScale(columns.decimal_digits());
+                    }
+
+                    m_Fields.push_back(field);
+                    columnCount++;
                 }
 
-                m_Fields.push_back(field);
+                Logger::GetInstance().Info("Catalog method loaded " + std::to_string(columnCount) + " columns for table: " + m_Name, "Table");
+            }
+            catch (const std::exception& e) {
+                Logger::GetInstance().Warning("Catalog method failed for table " + m_Name + ": " + std::string(e.what()), "Table");
             }
 
-            // Get primary key information
-            auto primaryKeys = catalog.find_primary_keys(m_Name);
-            while (primaryKeys.next()) {
-                std::string columnName = primaryKeys.column_name();
-                auto field = GetField(columnName);
-                if (field) {
-                    field->SetPrimaryKey(true);
+            // Method 2: If no columns found, try query-based method (fallback)
+            if (m_Fields.empty()) {
+                Logger::GetInstance().Info("Attempting query-based column detection for table: " + m_Name, "Table");
+
+                try {
+                    // Build table name - use brackets for MS Access
+                    std::string tableName = isAccess ? "[" + m_Name + "]" : m_Name;
+
+                    // Execute query that returns no rows but includes column metadata
+                    std::string sql = "SELECT * FROM " + tableName + " WHERE 1=0";
+                    Logger::GetInstance().Info("Executing: " + sql, "Table");
+
+                    nanodbc::result result = nanodbc::execute(*m_Connection, sql);
+
+                    // Get column count
+                    short columnCount = result.columns();
+                    Logger::GetInstance().Info("Query returned " + std::to_string(columnCount) + " columns", "Table");
+
+                    // Iterate through columns
+                    for (short i = 0; i < columnCount; ++i) {
+                        std::string columnName = result.column_name(i);
+                        int dataType = result.column_datatype(i);
+                        long columnSize = result.column_size(i);
+
+                        // Determine if nullable (this info may not be available from result set)
+                        bool nullable = true; // Default to true since we can't determine from result set
+
+                        FieldType fieldType = SQLTypeToFieldType(dataType);
+                        FieldMetadata field(columnName, fieldType, static_cast<int>(columnSize), nullable);
+
+                        // Set precision and scale for numeric types
+                        if (fieldType == FieldType::Decimal || fieldType == FieldType::Numeric) {
+                            int scale = result.column_decimal_digits(i);
+                            field.SetPrecision(static_cast<int>(columnSize));
+                            field.SetScale(scale);
+                        }
+
+                        m_Fields.push_back(field);
+                        Logger::GetInstance().Info("  Column " + std::to_string(i+1) + ": " + columnName + 
+                                                   " (" + FieldTypeToString(fieldType) + ")", "Table");
+                    }
+
+                    Logger::GetInstance().Info("Query-based method loaded " + std::to_string(m_Fields.size()) + 
+                                              " columns for table: " + m_Name, "Table");
+                }
+                catch (const std::exception& e) {
+                    Logger::GetInstance().Error("Query-based method also failed for table " + m_Name + 
+                                               ": " + std::string(e.what()), "Table");
+                    SetError("Failed to load columns using both catalog and query methods: " + std::string(e.what()));
                 }
             }
 
-            Logger::GetInstance().Info("Schema loaded for table: " + GetFullTableName() + 
-                       " (" + std::to_string(m_Fields.size()) + " columns)");
+            // Try to get primary key information (optional, may not work for all databases)
+            if (!m_Fields.empty()) {
+                try {
+                    nanodbc::catalog catalog(*m_Connection);
+                    auto primaryKeys = catalog.find_primary_keys(m_Name);
+                    while (primaryKeys.next()) {
+                        std::string columnName = primaryKeys.column_name();
+                        auto field = GetField(columnName);
+                        if (field) {
+                            field->SetPrimaryKey(true);
+                            Logger::GetInstance().Info("  Primary key: " + columnName, "Table");
+                        }
+                    }
+                }
+                catch (const std::exception& e) {
+                    Logger::GetInstance().Warning("Could not load primary keys for table " + m_Name + 
+                                                 ": " + std::string(e.what()), "Table");
+                }
+            }
+
+            if (m_Fields.empty()) {
+                Logger::GetInstance().Warning("No columns found for table: " + m_Name + 
+                                             " (Database: " + dbProduct + ")", "Table");
+                SetError("No columns could be loaded for this table");
+            } else {
+                Logger::GetInstance().Info("Schema loaded for table: " + m_Name + 
+                                          " (" + std::to_string(m_Fields.size()) + " columns)", "Table");
+            }
+
+            // Return true even if we got no columns - let the UI handle empty schema display
             return true;
         }
         catch (const std::exception& e) {
             SetError(std::string("Failed to load schema: ") + e.what());
-            Logger::GetInstance().Error(m_LastError, "Table");
+            Logger::GetInstance().Error(m_LastError + " for table: " + m_Name, "Table");
             return false;
         }
     }

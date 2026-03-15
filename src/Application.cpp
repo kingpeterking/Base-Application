@@ -253,6 +253,26 @@ void Application::SetupWindows()
     // Setup database connections manager window
     m_windowManager.AddWindow("Tools", "Database", "Connections Manager", 
         [this](bool* isOpen) { RenderDatabaseConnectionsManagerWindow(isOpen); });
+
+    // Setup database object browser window
+    m_windowManager.AddWindow("Tools", "Database", "Object Browser", 
+        [this](bool* isOpen) { RenderDatabaseObjectBrowserWindow(isOpen); });
+
+    // Setup database tables window
+    m_windowManager.AddWindow("Tools", "Database", "Tables", 
+        [this](bool* isOpen) { RenderDatabaseTablesWindow(isOpen); });
+
+    // Setup database views window
+    m_windowManager.AddWindow("Tools", "Database", "Views", 
+        [this](bool* isOpen) { RenderDatabaseViewsWindow(isOpen); });
+
+    // Setup database procedures window
+    m_windowManager.AddWindow("Tools", "Database", "Stored Procedures", 
+        [this](bool* isOpen) { RenderDatabaseProceduresWindow(isOpen); });
+
+    // Setup database schema viewer window
+    m_windowManager.AddWindow("Tools", "Database", "Schema Viewer", 
+        [this](bool* isOpen) { RenderDatabaseSchemaViewerWindow(isOpen); });
 }
 
 // Window rendering delegations to WindowFunctions
@@ -309,6 +329,31 @@ void Application::RenderDatabaseConnectionWindow(bool* isOpen)
 void Application::RenderDatabaseConnectionsManagerWindow(bool* isOpen)
 {
     m_windowFunctions->RenderDatabaseConnectionsManagerWindow(isOpen);
+}
+
+void Application::RenderDatabaseObjectBrowserWindow(bool* isOpen)
+{
+    m_windowFunctions->RenderDatabaseObjectBrowserWindow(isOpen);
+}
+
+void Application::RenderDatabaseTablesWindow(bool* isOpen)
+{
+    m_windowFunctions->RenderDatabaseTablesWindow(isOpen);
+}
+
+void Application::RenderDatabaseViewsWindow(bool* isOpen)
+{
+    m_windowFunctions->RenderDatabaseViewsWindow(isOpen);
+}
+
+void Application::RenderDatabaseProceduresWindow(bool* isOpen)
+{
+    m_windowFunctions->RenderDatabaseProceduresWindow(isOpen);
+}
+
+void Application::RenderDatabaseSchemaViewerWindow(bool* isOpen)
+{
+    m_windowFunctions->RenderDatabaseSchemaViewerWindow(isOpen);
 }
 
 void Application::Shutdown()

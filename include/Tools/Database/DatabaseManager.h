@@ -37,7 +37,7 @@ namespace Database {
 
         // Connection management
         bool Connect(const ConnectionConfig& config);
-        bool ConnectWithConnectionString(const std::string& connectionString);
+        bool ConnectWithConnectionString(const std::string& connectionString, const ConnectionConfig& config = ConnectionConfig());
         void Disconnect();
         bool IsConnected() const;
 
@@ -51,6 +51,12 @@ namespace Database {
         bool SwitchDatabase(const std::string& databaseName);
         std::vector<std::string> GetDatabaseNames();
 
+        // Database object inspection (delegates to current database)
+        std::vector<std::string> GetTableNames();
+        std::vector<std::string> GetViewNames();
+        std::vector<std::string> GetStoredProcedureNames();
+        std::vector<Database::DatabaseObjectInfo> GetDatabaseObjects(const std::string& typeFilter = "");
+
         // Connection information
         std::string GetConnectionName() const { return m_Config.ConnectionName; }
         std::string GetCurrentDatabaseName() const { return m_CurrentDatabaseName; }
@@ -59,6 +65,8 @@ namespace Database {
         std::string GetDatabaseVersion() const;
         std::string GetDriverName() const;
         std::string GetDriverVersion() const;
+        std::string GetUsername() const { return m_Config.Username; }
+        std::string GetOriginalConnectionString() const { return m_Config.OriginalConnectionString; }
         ConnectionConfig GetConfig() const { return m_Config; }
 
         // ODBC drivers

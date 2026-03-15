@@ -1,6 +1,6 @@
 # Base Application - Dear ImGui CMake Project
 
-**Version 2.2**
+**Version 2.3**
 
 A modern, distributable C++ application template using **Dear ImGui** for the UI framework and **CMake** for cross-platform builds.
 
@@ -34,9 +34,14 @@ A modern, distributable C++ application template using **Dear ImGui** for the UI
 - ✅ **Application Class Architecture** - Clean, extensible design
 - ✅ **Cross-Platform OpenGL** - Smooth rendering across Windows, macOS, and Linux
 - ✅ **Database Connectivity** - Full ODBC support with nanodbc
-  - Microsoft SQL Server, MySQL, PostgreSQL, SQLite, and more
+  - Microsoft SQL Server, MySQL, PostgreSQL, SQLite, Oracle, and more
   - **MS Access Database Support** (.mdb and .accdb files)
   - Connection Form, Connection String, DSN, and Quick Connect modes
+  - **Multiple Simultaneous Connections** - Connect to multiple databases at once
+  - **Duplicate Connection Prevention** - Automatically prevents connecting to the same database twice
+  - **Connection History** - Save and quickly reconnect to previous connections
+  - **Database Schema Viewer** - Browse tables, views, columns, indexes, and stored procedures
+  - **Database Object Inspector** - Detailed information about database objects
   - Connection string preview and debugging
   - Architecture detection (32-bit/64-bit) with helpful hints
 - ✅ **Log Viewer** - Comprehensive logging system with copy-to-clipboard functionality
@@ -92,10 +97,15 @@ Base-Application/
 │       ├── WindowFunctions_Core.cpp    # Core windows (Main Menu, Demo, Application, ImPlot)
 │       ├── WindowFunctions_Web.cpp     # Web windows (URL Request, Web Server)
 │       ├── WindowFunctions_FileSystem.cpp  # FileSystem windows (File Explorer, Log Viewer)
-│       └── WindowFunctions_Database.cpp    # Database windows (Connection, Manager)
+│       ├── WindowFunctions_Database.cpp    # Legacy database windows (not compiled)
+│       └── Database/                   # Database windows (actual implementation)
+│           ├── WindowFunctions_DatabaseConnection.cpp  # Connection and history windows
+│           └── WindowFunctions_DatabaseObjects.cpp     # Schema viewer and object inspector
 ├── docs/
 │   ├── DATABASE_SYSTEM.md              # Database system documentation
 │   ├── DATABASE_CONNECTION_WINDOW.md   # Connection UI guide
+│   ├── DatabaseSchemaViewing.md        # Schema viewer documentation
+│   ├── DatabaseInspectionWindows.md    # Object inspector guide
 │   └── MS_ACCESS_SUPPORT.md            # MS Access database setup guide
 ├── .gitignore                          # Git ignore rules
 ├── README.md                           # This file

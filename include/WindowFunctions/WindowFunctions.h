@@ -18,6 +18,11 @@ public:
     void RenderWebServerRequestsWindow(bool* isOpen);
     void RenderDatabaseConnectionWindow(bool* isOpen);
     void RenderDatabaseConnectionsManagerWindow(bool* isOpen);
+    void RenderDatabaseObjectBrowserWindow(bool* isOpen);
+    void RenderDatabaseTablesWindow(bool* isOpen);
+    void RenderDatabaseViewsWindow(bool* isOpen);
+    void RenderDatabaseProceduresWindow(bool* isOpen);
+    void RenderDatabaseSchemaViewerWindow(bool* isOpen);
 
 private:
     class Application* m_app;
