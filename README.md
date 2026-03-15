@@ -1,6 +1,6 @@
 # Base Application - Dear ImGui CMake Project
 
-**Version 2.1**
+**Version 2.2**
 
 A modern, distributable C++ application template using **Dear ImGui** for the UI framework and **CMake** for cross-platform builds.
 
@@ -88,7 +88,11 @@ Base-Application/
 │   └── WindowFunctions/
 │       ├── WindowFunction.cpp          # Window function implementation
 │       ├── WindowManager.cpp           # Window manager implementation
-│       └── WindowFunctions.cpp         # Window rendering implementations
+│       ├── WindowFunctions.cpp         # Main orchestrator (constructor/destructor)
+│       ├── WindowFunctions_Core.cpp    # Core windows (Main Menu, Demo, Application, ImPlot)
+│       ├── WindowFunctions_Web.cpp     # Web windows (URL Request, Web Server)
+│       ├── WindowFunctions_FileSystem.cpp  # FileSystem windows (File Explorer, Log Viewer)
+│       └── WindowFunctions_Database.cpp    # Database windows (Connection, Manager)
 ├── docs/
 │   ├── DATABASE_SYSTEM.md              # Database system documentation
 │   ├── DATABASE_CONNECTION_WINDOW.md   # Connection UI guide
@@ -118,24 +122,35 @@ Base-Application/
 
 ## Architecture
 
-The project is organized into three main areas:
+The project follows a modular, component-based architecture for maintainability and scalability.
 
 ### **Core Application** (`Application.h/cpp`)
 - Handles application lifecycle (initialization, main loop, shutdown)
 - Manages OpenGL context and GLFW window
 - Orchestrates ImGui frame rendering
 - Delegates window rendering to WindowFunctions
+- Manages multi-connection database system with connection history
 
 ### **Tools** (`include/Tools/`, `src/Tools/`)
-- **HTTPClient** - Network request handling via libcurl
-- **ImPlotClient** - Data visualization wrapper
-- **Settings** - Configuration persistence via INI files
-- **SimpleIni** - Lightweight INI file parser
+- **HTTPClient** - Network request handling via libcurl with SSL/TLS support
+- **WebServer** - Built-in HTTP server using cpp-httplib for webhooks and APIs
+- **ImPlotClient** - Data visualization wrapper for ImPlot
+- **Settings** - Configuration persistence via INI files with SimpleIni
+- **Logger** - Multi-level logging system (Info, Warning, Error, Debug) with source filtering
+- **FileSystem** - Cross-platform file operations (browse, filter, favorites, drive listing)
+- **Database** - Full ODBC connectivity with support for SQL Server, MySQL, PostgreSQL, SQLite, MS Access
 
 ### **WindowFunctions** (`include/WindowFunctions/`, `src/WindowFunctions/`)
-- **WindowFunction** - Encapsulates individual ImGui windows
-- **WindowManager** - Manages collection of windows with type-based grouping
-- **WindowFunctions** - Renders all window UI implementations
+**Modular Split Architecture** - Each functional area is in its own file for maintainability:
+- **WindowFunctions.cpp** - Main orchestrator (constructor/destructor only)
+- **WindowFunctions_Core.cpp** - Core windows:
+  - Main Menu, Demo Window, Application Info, ImPlot Demo
+- **WindowFunctions_Web.cpp** - Web/Network windows:
+  - URL Request Tool, Web Server Control, Request Monitor
+- **WindowFunctions_FileSystem.cpp** - File system windows:
+  - File Explorer with favorites and filtering, Log Viewer with source filtering
+- **WindowFunctions_Database.cpp** - Database windows:
+  - Database Connection (Form/String/DSN/Quick modes), Connections Manager (Active/History)
 
 ## Prerequisites
 

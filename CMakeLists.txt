@@ -148,6 +148,10 @@ add_executable(ImGuiApp
     src/Tools/ImPlotClient.cpp
     src/Tools/FileSystem.cpp
     src/WindowFunctions/WindowFunctions.cpp
+    src/WindowFunctions/WindowFunctions_Core.cpp
+    src/WindowFunctions/WindowFunctions_Web.cpp
+    src/WindowFunctions/WindowFunctions_FileSystem.cpp
+    src/WindowFunctions/WindowFunctions_Database.cpp
     src/Tools/Database/DatabaseManager.cpp
     src/Tools/Database/Database.cpp
     src/Tools/Database/Table.cpp
