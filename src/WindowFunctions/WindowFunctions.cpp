@@ -1527,13 +1527,32 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
                         m_app->m_databaseConnections.push_back(newConnection);
                         m_app->SetActiveConnection(static_cast<int>(m_app->m_databaseConnections.size()) - 1);
 
-                        // Create config for history (with basic info from connected manager)
+                        // Create config for history
                         Database::ConnectionConfig config;
                         config.ConnectionName = connectionName;
                         config.DriverName = newConnection->GetDriverName();
                         config.ServerAddress = newConnection->GetServerName();
                         config.DatabaseName = newConnection->GetCurrentDatabaseName();
-                        // Note: Can't extract username/password from connection string for security
+
+                        // Store original connection string (with password removed for security)
+                        std::string originalConnStr = m_app->m_dbConnectionStringBuffer;
+                        // Remove password from connection string for storage
+                        size_t pwdPos = originalConnStr.find("Pwd=");
+                        if (pwdPos == std::string::npos) pwdPos = originalConnStr.find("PWD=");
+                        if (pwdPos == std::string::npos) pwdPos = originalConnStr.find("Password=");
+                        if (pwdPos != std::string::npos)
+                        {
+                            size_t endPos = originalConnStr.find(';', pwdPos);
+                            if (endPos != std::string::npos)
+                            {
+                                originalConnStr.erase(pwdPos, endPos - pwdPos + 1);
+                            }
+                            else
+                            {
+                                originalConnStr.erase(pwdPos);
+                            }
+                        }
+                        config.OriginalConnectionString = originalConnStr;
 
                         // Add to history
                         m_app->AddConnectionToHistory(config);
@@ -1760,6 +1779,14 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
                         config.DatabaseName = newConnection->GetCurrentDatabaseName();
                         config.Username = m_app->m_dbDSNUsernameBuffer;
                         config.TrustedConnection = (strlen(m_app->m_dbDSNUsernameBuffer) == 0);
+
+                        // Store original DSN connection string (without password)
+                        std::string originalDsnStr = "DSN=" + std::string(m_app->m_dbDSNBuffer) + ";";
+                        if (strlen(m_app->m_dbDSNUsernameBuffer) > 0)
+                        {
+                            originalDsnStr += "Uid=" + std::string(m_app->m_dbDSNUsernameBuffer) + ";";
+                        }
+                        config.OriginalConnectionString = originalDsnStr;
 
                         // Add to history
                         m_app->AddConnectionToHistory(config);
@@ -2224,7 +2251,31 @@ void WindowFunctions::RenderDatabaseConnectionsManagerWindow(bool* isOpen)
 
                         // Create new connection
                         auto newConnection = std::make_shared<Database::DatabaseManager>();
-                        if (newConnection->Connect(config))
+                        bool connectSuccess = false;
+
+                        // If we have an original connection string, use it (for Connection String/DSN connections)
+                        if (!config.OriginalConnectionString.empty())
+                        {
+                            std::string reconnectString = config.OriginalConnectionString;
+
+                            // Add password if provided
+                            if (!config.Password.empty())
+                            {
+                                if (reconnectString.back() != ';') reconnectString += ";";
+                                reconnectString += "Pwd=" + config.Password + ";";
+                            }
+
+                            LOG_INFO("Reconnecting with connection string");
+                            connectSuccess = newConnection->ConnectWithConnectionString(reconnectString);
+                        }
+                        else
+                        {
+                            // Use standard Connect method for Form connections
+                            LOG_INFO("Reconnecting with connection config");
+                            connectSuccess = newConnection->Connect(config);
+                        }
+
+                        if (connectSuccess)
                         {
                             m_app->m_databaseConnections.push_back(newConnection);
                             m_app->SetActiveConnection(static_cast<int>(m_app->m_databaseConnections.size()) - 1);

@@ -546,6 +546,7 @@ void Application::LoadConnectionHistory()
         // Note: Don't save passwords for security
         entry.config.TrustedConnection = m_settings.GetBool(section, "TrustedConnection", false);
         entry.config.Encrypt = m_settings.GetBool(section, "Encrypt", false);
+        entry.config.OriginalConnectionString = m_settings.GetString(section, "OriginalConnectionString", "");
         entry.lastUsedTimestamp = m_settings.GetString(section, "LastUsed", "");
 
         if (!entry.config.DriverName.empty() && !entry.config.ServerAddress.empty())
@@ -577,6 +578,7 @@ void Application::SaveConnectionHistory()
         // Note: Don't save passwords for security
         m_settings.SetBool(section, "TrustedConnection", entry.config.TrustedConnection);
         m_settings.SetBool(section, "Encrypt", entry.config.Encrypt);
+        m_settings.SetString(section, "OriginalConnectionString", entry.config.OriginalConnectionString);
         m_settings.SetString(section, "LastUsed", entry.lastUsedTimestamp);
     }
 

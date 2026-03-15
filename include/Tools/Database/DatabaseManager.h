@@ -23,6 +23,7 @@ namespace Database {
         std::string AdditionalOptions;  // Additional connection string options
         int ConnectionTimeout = 30;     // Connection timeout in seconds
         int CommandTimeout = 30;        // Command timeout in seconds
+        std::string OriginalConnectionString; // Original connection string for reconnection (passwords removed)
 
         // Build ODBC connection string
         std::string BuildConnectionString() const;
