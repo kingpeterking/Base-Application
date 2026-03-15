@@ -2011,7 +2011,7 @@ void WindowFunctions::RenderDatabaseConnectionsManagerWindow(bool* isOpen)
                         ImGui::TableSetColumnIndex(0);
                         if (i == m_app->m_activeConnectionIndex)
                         {
-                            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "✓ Active");
+                            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), ">> Active");
                         }
                         else
                         {
@@ -2265,8 +2265,23 @@ void WindowFunctions::RenderDatabaseConnectionsManagerWindow(bool* isOpen)
                                 reconnectString += "Pwd=" + config.Password + ";";
                             }
 
-                            LOG_INFO("Reconnecting with connection string");
+                            LOG_INFO("Reconnecting with original connection string");
                             connectSuccess = newConnection->ConnectWithConnectionString(reconnectString);
+                        }
+                        // Special handling for MS Access (file-based database)
+                        else if (config.DriverName.find("Access") != std::string::npos)
+                        {
+                            // Build MS Access connection string with DBQ parameter
+                            std::string accessConnStr = "Driver={" + config.DriverName + "};";
+                            accessConnStr += "DBQ=" + config.ServerAddress + ";";
+
+                            if (!config.Password.empty())
+                            {
+                                accessConnStr += "PWD=" + config.Password + ";";
+                            }
+
+                            LOG_INFO("Reconnecting MS Access database with DBQ connection string");
+                            connectSuccess = newConnection->ConnectWithConnectionString(accessConnStr);
                         }
                         else
                         {

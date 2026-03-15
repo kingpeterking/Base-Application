@@ -1,6 +1,6 @@
 # Base Application - Dear ImGui CMake Project
 
-**Version 2.0**
+**Version 2.1**
 
 A modern, distributable C++ application template using **Dear ImGui** for the UI framework and **CMake** for cross-platform builds.
 
