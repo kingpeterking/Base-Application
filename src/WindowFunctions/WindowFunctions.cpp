@@ -2175,15 +2175,16 @@ void WindowFunctions::RenderDatabaseConnectionsManagerWindow(bool* isOpen)
                         {
                             if (ImGui::SmallButton("Reconnect"))
                             {
-                                if (entry.config.TrustedConnection || !entry.config.Username.empty())
+                                // Only prompt for password if NOT trusted connection AND has username (SQL Auth)
+                                if (!entry.config.TrustedConnection && !entry.config.Username.empty())
                                 {
-                                    // If trusted connection or has username, prompt for password
+                                    // SQL Auth - prompt for password
                                     reconnectingIndex = i;
                                     memset(reconnectPasswordBuffer, 0, sizeof(reconnectPasswordBuffer));
                                 }
                                 else
                                 {
-                                    // No credentials needed
+                                    // Trusted connection or no credentials - just reconnect
                                     indexToReconnect = i;
                                 }
                             }
