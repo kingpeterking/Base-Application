@@ -1527,10 +1527,16 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
                         m_app->m_databaseConnections.push_back(newConnection);
                         m_app->SetActiveConnection(static_cast<int>(m_app->m_databaseConnections.size()) - 1);
 
-                        // Try to extract config from connection for history
+                        // Create config for history (with basic info from connected manager)
                         Database::ConnectionConfig config;
                         config.ConnectionName = connectionName;
-                        // Note: Connection string parsing for history would be complex, skip for now
+                        config.DriverName = newConnection->GetDriverName();
+                        config.ServerAddress = newConnection->GetServerName();
+                        config.DatabaseName = newConnection->GetCurrentDatabaseName();
+                        // Note: Can't extract username/password from connection string for security
+
+                        // Add to history
+                        m_app->AddConnectionToHistory(config);
 
                         m_app->m_dbConnectionStatus = "Connected: " + connectionName + " - " + 
                             newConnection->GetDatabaseProduct() + " " +
@@ -1745,6 +1751,18 @@ void WindowFunctions::RenderDatabaseConnectionWindow(bool* isOpen)
                         // Add to connections list
                         m_app->m_databaseConnections.push_back(newConnection);
                         m_app->SetActiveConnection(static_cast<int>(m_app->m_databaseConnections.size()) - 1);
+
+                        // Create config for history
+                        Database::ConnectionConfig config;
+                        config.ConnectionName = connectionName;
+                        config.DriverName = newConnection->GetDriverName();
+                        config.ServerAddress = newConnection->GetServerName();
+                        config.DatabaseName = newConnection->GetCurrentDatabaseName();
+                        config.Username = m_app->m_dbDSNUsernameBuffer;
+                        config.TrustedConnection = (strlen(m_app->m_dbDSNUsernameBuffer) == 0);
+
+                        // Add to history
+                        m_app->AddConnectionToHistory(config);
 
                         m_app->m_dbConnectionStatus = "Connected: " + connectionName + " - " + 
                             newConnection->GetDatabaseProduct() + " " +
